@@ -2,6 +2,8 @@ package br.com.neurohelp.tcc_backend.Controller.Publicacao;
 
 
 import br.com.neurohelp.tcc_backend.Entity.Postagem.Postagem;
+import br.com.neurohelp.tcc_backend.Service.AnexoService;
+import br.com.neurohelp.tcc_backend.Service.PostagemService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +17,7 @@ public class PublicacaoController {
     @PostMapping("/salvar")
     public ResponseEntity<?> salvar(@RequestBody Postagem postagem){
         postagem.getAnexos().forEach(anexo -> anexo.setPostagem(postagem));
-        postagem.getAnexos().forEach(AnexoService :: salvar);
-        return ResponseEntity.ok().body(PostagemService.salvar(postagem));
+        postagem.getAnexos().forEach(AnexoService:: salvar);
+        return ResponseEntity.ok((PostagemService.salvar(postagem)));
     }
 }
