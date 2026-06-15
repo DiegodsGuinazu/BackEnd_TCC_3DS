@@ -2,7 +2,8 @@ package br.com.neurohelp.tcc_backend.Security;
 
 
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import org.springframework.stereotype.Service;
 
 
@@ -14,6 +15,6 @@ public class TokenService{
 
     public String gerarToken(UsuarioAutenticavel usuario){
         return JWT.create().withSubject(usuario.getEmail())
-                .sign(Pbkdf2PasswordEncoder.Algorithm.HMAC256(SECRET_KEY));
+                .sign(Algorithm.HMAC256(SECRET_KEY));
     }
 }

@@ -1,7 +1,6 @@
 package br.com.neurohelp.tcc_backend.Repository;
 
 import br.com.neurohelp.tcc_backend.Entity.Postagem.Postagem;
-import jakarta.annotation.Nonnull;
 import lombok.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
