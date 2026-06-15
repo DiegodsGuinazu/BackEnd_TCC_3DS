@@ -8,8 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +31,10 @@ public class Postagem {
 
     private String titulo;
 
-    @OneToMany(mappedBy = "idPostagem")
+    @OneToMany(mappedBy = "postagem", cascade = CascadeType.ALL,  orphanRemoval = true)
     private List<PermissaoAcesso> permissoes = new ArrayList<>();
 
-    @OneToMany(mappedBy = "postagens", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "postagem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Anexo> anexos = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

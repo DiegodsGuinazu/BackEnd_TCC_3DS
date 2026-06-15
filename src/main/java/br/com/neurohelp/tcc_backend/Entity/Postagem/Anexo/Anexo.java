@@ -17,7 +17,7 @@ public class Anexo {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "Postagem_id")
+
     private Postagem postagem;
 
     private String nomeOriginal;
