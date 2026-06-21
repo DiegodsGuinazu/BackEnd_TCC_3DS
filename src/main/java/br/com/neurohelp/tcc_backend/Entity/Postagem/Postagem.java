@@ -38,22 +38,12 @@ public class Postagem {
     @OneToMany(mappedBy = "postagem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Anexo> anexos = new ArrayList<>();
 
-    @ElementCollection(targetClass = tipoPostagem.class)
-    @Enumerated(EnumType.STRING)
-    @CollectionTable(
-            name = "postagem_tipo",
-            joinColumns = @JoinColumn(name = "postagem_id")
-    )
-    @Column(name = "tipo")
-    private List<tipoPostagem> tipos;
-
-    @ElementCollection(targetClass = Categoria.class)
-    @Enumerated(EnumType.STRING)
-    @CollectionTable(
+    @ManyToMany
+    @JoinTable(
             name = "postagem_categoria",
-            joinColumns = @JoinColumn(name = "postagem_id")
+            joinColumns = @JoinColumn(name = "postagem_id"),
+            inverseJoinColumns = @JoinColumn(name = "categoria_id")
     )
-    @Column(name = "categoria")
     private Set<Categoria> categorias;
 
 }

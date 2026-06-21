@@ -19,3 +19,6 @@ alter table if exists permissao_acesso add constraint FK8f4606e01whply91eanepl5a
 2026-06-15 11:23:41.991077-03:00 jdbc[13]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM ANEXO ANEXO [*]PERMISSAO_ACESSO"; SQL statement:
 SELECT * FROM ANEXO ANEXO PERMISSAO_ACESSO [42000-240]
+2026-06-20 20:46:47.654923-03:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "[*]USER_RESP"; expected "UPDATE"; SQL statement:
+USER_RESP [42001-240]
