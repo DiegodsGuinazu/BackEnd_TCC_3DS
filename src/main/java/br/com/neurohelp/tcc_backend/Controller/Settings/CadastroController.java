@@ -27,6 +27,9 @@ public class CadastroController {
     public ResponseEntity<?> cadastrarProfissional(
             @RequestBody UserProf usuario) {
 
+        System.out.println("Cadastrando profissional");
+        System.out.println(usuario.getNome());
+
         profissionalRepository.save(usuario);
 
         return ResponseEntity.ok("Profissional cadastrado com sucesso");
@@ -35,6 +38,9 @@ public class CadastroController {
     @PostMapping("/responsavel")
     public ResponseEntity<?> cadastrarResponsavel(
             @RequestBody UserResp usuario) {
+
+        System.out.println("Cadastrando responsavel");
+        System.out.println(usuario.getNome());
 
         responsavelRepository.save(usuario);
 

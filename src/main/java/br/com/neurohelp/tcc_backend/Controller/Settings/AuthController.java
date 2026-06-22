@@ -30,6 +30,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Login dados) {
+        System.out.println("Email recebido: " + dados.getEmail());
+
+        var prof = profissionalRepository.findByEmail(dados.getEmail());
+        System.out.println("Profissional encontrado: " + prof.isPresent());
+
+        var resp = responsavelRepository.findByEmail(dados.getEmail());
+        System.out.println("Responsável encontrado: " + resp.isPresent());
 
         UsuarioAutenticavel usuario = profissionalRepository.findByEmail(dados.getEmail())
                 .map(u -> (UsuarioAutenticavel) u)
@@ -41,6 +48,11 @@ public class AuthController {
                     .orElse(null);
         }
 
+        System.out.println("Senha digitada: " + dados.getSenha());
+
+        if (usuario != null) {
+            System.out.println("Senha banco: " + usuario.getSenha());
+        }
         if (usuario == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
