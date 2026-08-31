@@ -1,11 +1,12 @@
-# Estágio de build com Gradle
-FROM gradle:8.5-jdk21 AS build
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
-RUN gradle bootJar --no-daemon
+# Estágio de build usando o próprio Wrapper do Gradle do projeto
+FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /app
+COPY . .
+RUN chmod +x gradlew
+RUN ./gradlew bootJar --no-daemon
 
-# Estágio de execução com imagem oficial Eclipse Temurin (Java 21)
+# Estágio de execução
 FROM eclipse-temurin:21-jre-alpine
 EXPOSE 8080
-COPY --from=build /home/gradle/src/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "/app.jar"]
