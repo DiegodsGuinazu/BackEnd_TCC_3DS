@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -23,7 +22,17 @@ public class SecurityFilter extends OncePerRequestFilter {
     @Autowired
     private ProfissionalRepository profissionalRepository;
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
 
+        return "OPTIONS".equalsIgnoreCase(method)
+                || path.startsWith("/login")
+                || path.startsWith("/auth")
+                || path.startsWith("/cadastro")
+                || path.startsWith("/h2-console");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -31,12 +40,10 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         var tokenJWT = recuperarToken(request);
 
-
-
         if (tokenJWT != null) {
             var subject = tokenService.validarToken(tokenJWT);
 
-            if (!subject.isEmpty()) {
+            if (subject != null && !subject.isEmpty()) {
                 var usuario = profissionalRepository.findByEmail(subject).orElse(null);
 
                 if (usuario != null) {
@@ -52,7 +59,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     private String recuperarToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.replace("Bearer ", "");
+            return authorizationHeader.replace("Bearer ", "").trim();
         }
         return null;
     }
