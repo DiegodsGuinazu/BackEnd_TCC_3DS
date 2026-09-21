@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface ResponsavelRepository extends JpaRepository<UserResp, Long> {
-    Optional<UserResp> findByEmail(String email);
+    static Optional<UserResp> findByEmail(String email) {
+        return null;
+    }
 }

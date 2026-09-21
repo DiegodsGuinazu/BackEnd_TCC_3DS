@@ -3,6 +3,7 @@ package br.com.neurohelp.tcc_backend.config;
 import br.com.neurohelp.tcc_backend.Security.SecurityFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -31,10 +32,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Libera requisições OPTIONS prévias do navegador
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        // 2. Libera /login, /auth/login e cadastros
-                        .requestMatchers("/h2-console/**", "/login", "/auth/login", "/cadastro/**").permitAll()
+                        // Libera requisições preflight do navegador (CORS)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Libera a requisição POST para a rota de login
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+
+                        // Libera rotas gerais e cadastros
+                        .requestMatchers("/h2-console/**", "/login", "/cadastro/**").permitAll()
+
+                        // Exige autenticação para as demais rotas
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
@@ -48,20 +55,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Defina a URL do seu front-end (ex: React rodando na porta 3000 ou 5173)
         configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173","https://neuro-help-psi.vercel.app"));
 
-        // Métodos HTTP liberados
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-        // Cabeçalhos permitidos (essencial incluir Authorization para envio do JWT)
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
 
-        // Permite envio de credenciais/cookies se necessário
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplica essa configuração em todas as rotas da API
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

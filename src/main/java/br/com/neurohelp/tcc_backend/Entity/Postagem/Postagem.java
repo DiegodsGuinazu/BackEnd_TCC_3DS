@@ -2,7 +2,6 @@ package br.com.neurohelp.tcc_backend.Entity.Postagem;
 
 import br.com.neurohelp.tcc_backend.Entity.Postagem.Anexo.Anexo;
 import br.com.neurohelp.tcc_backend.Entity.Relation.Permissao.PermissaoAcesso;
-import br.com.neurohelp.tcc_backend.res.tipoPostagem;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

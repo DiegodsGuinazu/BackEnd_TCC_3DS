@@ -31,7 +31,6 @@ public record PerfilResponseDTO(
     }
     @GetMapping
     public ResponseEntity<PerfilResponseDTO> buscarPerfil(@AuthenticationPrincipal UserProf usuarioLogado) {
-        // 'usuarioLogado' já vem preenchido diretamente pelo filtro!
         return ResponseEntity.ok(new PerfilResponseDTO(usuarioLogado));
     }
 }

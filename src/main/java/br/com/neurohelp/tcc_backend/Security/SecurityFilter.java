@@ -1,6 +1,7 @@
 package br.com.neurohelp.tcc_backend.Security;
 
 import br.com.neurohelp.tcc_backend.Repository.ProfissionalRepository;
+import br.com.neurohelp.tcc_backend.Repository.ResponsavelRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -28,8 +30,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         return "OPTIONS".equalsIgnoreCase(method)
-                || path.startsWith("/login")
-                || path.startsWith("/auth")
+                || path.equals("/auth/login")
                 || path.startsWith("/cadastro")
                 || path.startsWith("/h2-console");
     }
@@ -41,15 +42,18 @@ public class SecurityFilter extends OncePerRequestFilter {
         var tokenJWT = recuperarToken(request);
 
         if (tokenJWT != null) {
-            var subject = tokenService.validarToken(tokenJWT);
-
-            if (subject != null && !subject.isEmpty()) {
-                var usuario = profissionalRepository.findByEmail(subject).orElse(null);
-
-                if (usuario != null) {
-                    var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+            try {
+                var subject = tokenService.validarToken(tokenJWT);
+                if (subject != null && !subject.isEmpty()) {
+                    var usuario = profissionalRepository.findByEmail(subject).orElse(null);
+                    if (usuario != null) {
+                        var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
+            } catch (Exception e) {
+                // Token inválido ou expirado: limpa o contexto para garantir o bloqueio
+                SecurityContextHolder.clearContext();
             }
         }
 
