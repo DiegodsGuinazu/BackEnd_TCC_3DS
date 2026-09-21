@@ -20,16 +20,13 @@ public class UsuarioService {
 
     public Object buscarPorEmail(String email) {
 
-        Optional<UserResp> resp = responsavelRepository.findbyEmail(email);
+        Optional<UserResp> resp = responsavelRepository.findByEmail(email);
         if (resp.isPresent()) {
             return resp.get();
         }
 
         Optional<UserProf> prof = profissionalRepository.findByEmail(email);
-        if (prof.isPresent()) {
-            return prof.get();
-        }
+        return prof.orElse(null);
 
-        return null;
     }
 }

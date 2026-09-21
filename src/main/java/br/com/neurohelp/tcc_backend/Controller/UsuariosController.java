@@ -28,7 +28,7 @@ public class UsuariosController {
     @PostMapping("/autenticar")
     public ResponseEntity<Boolean> autentica(@RequestBody Login login) {
 
-        UserResp resp = (respRepository.findbyEmail(login.getEmail()).orElse(null));
+        UserResp resp = (respRepository.findByEmail(login.getEmail()).orElse(null));
 
         if (autenticarUsuario(resp, login)) {
             return ResponseEntity.ok(true);

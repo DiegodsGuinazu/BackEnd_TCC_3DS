@@ -33,12 +33,12 @@ public class AuthController {
 
         var prof = profissionalRepository.findByEmail(dados.getEmail());
 
-        var resp = responsavelRepository.findbyEmail(dados.getEmail());
+        var resp = responsavelRepository.findByEmail(dados.getEmail());
 
         UsuarioAutenticavel usuario = (UsuarioAutenticavel) profissionalRepository.findByEmail(dados.getEmail()).orElse(null);
 
         if (usuario == null) {
-            usuario = (UsuarioAutenticavel) responsavelRepository.findbyEmail(dados.getEmail()).orElse(null);
+            usuario = (UsuarioAutenticavel) responsavelRepository.findByEmail(dados.getEmail()).orElse(null);
         }
 
         if (usuario != null) {
