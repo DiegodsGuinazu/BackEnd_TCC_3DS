@@ -1,15 +1,13 @@
 package br.com.neurohelp.tcc_backend.Security;
 
-import br.com.neurohelp.tcc_backend.Repository.ProfissionalRepository;
-import br.com.neurohelp.tcc_backend.Repository.ResponsavelRepository;
+import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -18,11 +16,9 @@ import java.io.IOException;
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
 
-    @Autowired
     private TokenService tokenService;
 
-    @Autowired
-    private ProfissionalRepository profissionalRepository;
+    private profissionalRepository profissionalRepository;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -36,7 +32,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         var tokenJWT = recuperarToken(request);

@@ -2,8 +2,8 @@ package br.com.neurohelp.tcc_backend.Controller.Settings;
 
 import br.com.neurohelp.tcc_backend.Entity.User.UserProf;
 import br.com.neurohelp.tcc_backend.Entity.User.UserResp;
-import br.com.neurohelp.tcc_backend.Repository.ProfissionalRepository;
-import br.com.neurohelp.tcc_backend.Repository.ResponsavelRepository;
+import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
+import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class CadastroController {
 
-    private final ProfissionalRepository profissionalRepository;
-    private final ResponsavelRepository responsavelRepository;
+    private final profissionalRepository profissionalRepository;
+    private final responsavelRepository responsavelRepository;
 
     public CadastroController(
-            ProfissionalRepository profissionalRepository,
-            ResponsavelRepository responsavelRepository) {
+            profissionalRepository profissionalRepository,
+            responsavelRepository responsavelRepository) {
 
         this.profissionalRepository = profissionalRepository;
         this.responsavelRepository = responsavelRepository;

@@ -7,8 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ResponsavelRepository extends JpaRepository<UserResp, Long> {
+public interface responsavelRepository extends JpaRepository<UserResp, Long> {
     static Optional<UserResp> findByEmail(String email) {
-        return null;
+        return Optional.empty();
     }
+
+    Optional<UserResp> findbyEmail(String email);
 }

@@ -2,8 +2,8 @@ package br.com.neurohelp.tcc_backend.Controller.Settings;
 
 import br.com.neurohelp.tcc_backend.DTO.Login;
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
-import br.com.neurohelp.tcc_backend.Repository.ProfissionalRepository;
-import br.com.neurohelp.tcc_backend.Repository.ResponsavelRepository;
+import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
+import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,11 +18,11 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private final ProfissionalRepository profissionalRepository;
-    private final ResponsavelRepository responsavelRepository;
+    private final profissionalRepository profissionalRepository;
+    private final responsavelRepository responsavelRepository;
     private final TokenService tokenService;
 
-    public AuthController(ProfissionalRepository profissionalRepository, ResponsavelRepository responsavelRepository, TokenService tokenService) {
+    public AuthController(profissionalRepository profissionalRepository, responsavelRepository responsavelRepository, TokenService tokenService) {
         this.profissionalRepository = profissionalRepository;
         this.responsavelRepository = responsavelRepository;
         this.tokenService = tokenService;
@@ -30,25 +30,16 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Login dados) {
-        System.out.println("Email recebido: " + dados.getEmail());
 
         var prof = profissionalRepository.findByEmail(dados.getEmail());
-        System.out.println("Profissional encontrado: " + prof.isPresent());
 
-        var resp = responsavelRepository.findByEmail(dados.getEmail());
-        System.out.println("Responsável encontrado: " + resp.isPresent());
+        var resp = responsavelRepository.findbyEmail(dados.getEmail());
 
-        UsuarioAutenticavel usuario = profissionalRepository.findByEmail(dados.getEmail())
-                .map(u -> (UsuarioAutenticavel) u)
-                .orElse(null);
+        UsuarioAutenticavel usuario = (UsuarioAutenticavel) profissionalRepository.findByEmail(dados.getEmail()).orElse(null);
 
         if (usuario == null) {
-            usuario = responsavelRepository.findByEmail(dados.getEmail())
-                    .map(u -> (UsuarioAutenticavel) u)
-                    .orElse(null);
+            usuario = (UsuarioAutenticavel) responsavelRepository.findbyEmail(dados.getEmail()).orElse(null);
         }
-
-        System.out.println("Senha digitada: " + dados.getSenha());
 
         if (usuario != null) {
             System.out.println("Senha banco: " + usuario.getSenha());

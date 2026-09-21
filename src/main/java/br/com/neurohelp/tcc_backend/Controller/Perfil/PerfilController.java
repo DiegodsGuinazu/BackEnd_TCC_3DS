@@ -3,7 +3,7 @@ package br.com.neurohelp.tcc_backend.Controller.Perfil;
 import br.com.neurohelp.tcc_backend.Entity.User.UserProf;
 import br.com.neurohelp.tcc_backend.DTO.AtualizarPerfilDTO;
 import br.com.neurohelp.tcc_backend.DTO.PerfilResponseDTO;
-import br.com.neurohelp.tcc_backend.Repository.ProfissionalRepository;
+import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/perfil")
 public class PerfilController {
 
-    private final ProfissionalRepository profissionalRepository;
+    private final profissionalRepository profissionalRepository;
 
-    public PerfilController(ProfissionalRepository profissionalRepository) {
+    public PerfilController(profissionalRepository profissionalRepository) {
         this.profissionalRepository = profissionalRepository;
     }
 

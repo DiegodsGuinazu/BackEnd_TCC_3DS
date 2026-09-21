@@ -1,7 +1,6 @@
 package br.com.neurohelp.tcc_backend.Entity.Postagem;
 
 import br.com.neurohelp.tcc_backend.Entity.Postagem.Anexo.Anexo;
-import br.com.neurohelp.tcc_backend.Entity.Relation.Permissao.PermissaoAcesso;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,9 +29,6 @@ public class Postagem {
     private String conteudoHtml;
 
     private String titulo;
-
-    @OneToMany(mappedBy = "postagem", cascade = CascadeType.ALL,  orphanRemoval = true)
-    private List<PermissaoAcesso> permissoes = new ArrayList<>();
 
     @OneToMany(mappedBy = "postagem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Anexo> anexos = new ArrayList<>();

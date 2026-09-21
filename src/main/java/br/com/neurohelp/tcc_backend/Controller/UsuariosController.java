@@ -4,8 +4,8 @@ import br.com.neurohelp.tcc_backend.DTO.Login;
 import br.com.neurohelp.tcc_backend.Entity.User.UserProf;
 import br.com.neurohelp.tcc_backend.Entity.User.UserResp;
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
-import br.com.neurohelp.tcc_backend.Repository.ProfissionalRepository;
-import br.com.neurohelp.tcc_backend.Repository.ResponsavelRepository;
+import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
+import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,15 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class UsuariosController {
 
     @Autowired
-    private ResponsavelRepository respRepository;
+    private responsavelRepository respRepository;
 
     @Autowired
-    private ProfissionalRepository profRepository;
+    private profissionalRepository profRepository;
 
     @PostMapping("/autenticar")
     public ResponseEntity<Boolean> autentica(@RequestBody Login login) {
 
-        UserResp resp = (respRepository.findByEmail(login.getEmail()).orElse(null));
+        UserResp resp = (respRepository.findbyEmail(login.getEmail()).orElse(null));
 
         if (autenticarUsuario(resp, login)) {
             return ResponseEntity.ok(true);
