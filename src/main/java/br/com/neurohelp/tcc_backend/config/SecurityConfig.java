@@ -41,8 +41,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/cadastro/**", "/auth/**", "/login").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/cadastro/**", "/auth/**", "/login", "/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
@@ -55,7 +54,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+
+        // Aceita o frontend do Render e testes locais
         configuration.setAllowedOriginPatterns(List.of(
+                "https://espectrocare.onrender.com",
                 "https://espectro-care.onrender.com",
                 "http://localhost:*"
         ));
