@@ -67,7 +67,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173","https://neuro-help-psi.vercel.app"));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173","https://espectro-care.onrender.com"));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
@@ -84,7 +84,7 @@ public class SecurityConfig {
         @Override
         public void addCorsMappings(CorsRegistry registry) {
             registry.addMapping("/**")
-                    .allowedOrigins("https://neuro-help-psi.vercel.app")
+                    .allowedOrigins("https://espectro-care.onrender.com")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*");
         }

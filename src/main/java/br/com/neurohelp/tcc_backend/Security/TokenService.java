@@ -21,7 +21,7 @@ public class TokenService {
         Algorithm algoritmo = Algorithm.HMAC256(secretKey);
 
         return JWT.create()
-                .withIssuer("API Neurohelp")
+                .withIssuer("API EspectroCare")
                 .withSubject(usuario.getEmail())
                 .withExpiresAt(gerarDataExpiracao())
                 .sign(algoritmo);
@@ -31,7 +31,7 @@ public class TokenService {
         try {
             Algorithm algoritmo = Algorithm.HMAC256(secretKey);
             return JWT.require(algoritmo)
-                    .withIssuer("API Neurohelp")
+                    .withIssuer("API EspectroCare")
                     .build()
                     .verify(tokenJWT)
                     .getSubject();
