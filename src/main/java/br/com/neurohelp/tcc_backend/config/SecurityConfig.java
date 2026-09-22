@@ -54,7 +54,8 @@ public class SecurityConfig {
                                 "/cadastro/**",
                                 "/auth/**",
                                 "/login",
-                                "/h2-console/**"
+                                "/h2-console/**",
+                                "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
