@@ -46,8 +46,19 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Permite requisições OPTIONS prévias do navegador
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/cadastro/**", "/auth/**", "/login", "/h2-console/**").permitAll()
+
+                        // Libera todas as variações de cadastro, autenticação e rotas públicas
+                        .requestMatchers(
+                                "/cadastro/**",
+                                "/cadastro-responsavel/**",
+                                "/responsavel/**",
+                                "/auth/**",
+                                "/login",
+                                "/h2-console/**"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
