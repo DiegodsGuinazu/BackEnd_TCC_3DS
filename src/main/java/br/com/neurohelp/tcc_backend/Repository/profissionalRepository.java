@@ -10,5 +10,4 @@ import java.util.Optional;
 public interface profissionalRepository extends JpaRepository<UserProf, Long> {
 
     Optional<UserProf> findByEmail(String email);
-
 }

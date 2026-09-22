@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 @RestController
 @RequestMapping("/usuarios")
 public class UsuariosController {
@@ -25,17 +27,18 @@ public class UsuariosController {
     @Autowired
     private profissionalRepository profRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @PostMapping("/autenticar")
     public ResponseEntity<Boolean> autentica(@RequestBody Login login) {
 
-        UserResp resp = (respRepository.findByEmail(login.getEmail()).orElse(null));
-
+        UserResp resp = respRepository.findByEmail(login.getEmail()).orElse(null);
         if (autenticarUsuario(resp, login)) {
             return ResponseEntity.ok(true);
         }
 
         UserProf prof = profRepository.findByEmail(login.getEmail()).orElse(null);
-
         if (autenticarUsuario(prof, login)) {
             return ResponseEntity.ok(true);
         }
@@ -43,11 +46,7 @@ public class UsuariosController {
         return ResponseEntity.ok(false);
     }
 
-    private boolean autenticarUsuario(
-            UsuarioAutenticavel usuario,
-            Login login) {
-
-        return usuario != null &&
-                usuario.getSenha().equals(login.getSenha());
+    private boolean autenticarUsuario(UsuarioAutenticavel usuario, Login login) {
+        return usuario != null && passwordEncoder.matches(login.getSenha(), usuario.getSenha());
     }
 }
