@@ -35,6 +35,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         return "OPTIONS".equalsIgnoreCase(method)
                 || path.equals("/auth/login")
+                || path.equals("/login")
                 || path.startsWith("/cadastro")
                 || path.startsWith("/h2-console");
     }
