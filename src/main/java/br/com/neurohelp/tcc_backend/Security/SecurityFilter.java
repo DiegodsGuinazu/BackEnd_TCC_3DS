@@ -49,7 +49,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         if (tokenJWT != null) {
             try {
                 var subject = tokenService.validarToken(tokenJWT);
-                if (subject != null && !subject.isEmpty()) {
+                if (subject != null && !subject.trim().isEmpty()) {
 
                     UserDetails usuario = (UserDetails) profissionalRepository.findByEmail(subject).orElse(null);
 
@@ -63,7 +63,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                     }
                 }
             } catch (Exception e) {
-                // Token inválido ou expirado: limpa o contexto para garantir o bloqueio
+                // Em rotas protegidas que falharem o token, apenas limpa a autenticação
                 SecurityContextHolder.clearContext();
             }
         }
@@ -74,7 +74,11 @@ public class SecurityFilter extends OncePerRequestFilter {
     private String recuperarToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.replace("Bearer ", "").trim();
+            String token = authorizationHeader.replace("Bearer ", "").trim();
+            // Valida se o token retornado não é uma string vazia ou "null"/"undefined"
+            if (!token.isEmpty() && !"null".equalsIgnoreCase(token) && !"undefined".equalsIgnoreCase(token)) {
+                return token;
+            }
         }
         return null;
     }

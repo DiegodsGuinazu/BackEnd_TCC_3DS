@@ -25,10 +25,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final SecurityFilter securityFilter;
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
 
     public SecurityConfig(SecurityFilter securityFilter) {
         this.securityFilter = securityFilter;
@@ -40,25 +36,26 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Permite requisições OPTIONS prévias do navegador
+                        // Libera todas as requisições OPTIONS do navegador (CORS Preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // Libera todas as variações de cadastro, autenticação e rotas públicas
+                        // Libera explicitamente as rotas do cadastro e autenticação
                         .requestMatchers(
                                 "/cadastro/**",
-                                "/cadastro-responsavel/**",
-                                "/responsavel/**",
                                 "/auth/**",
                                 "/login",
                                 "/h2-console/**"
                         ).permitAll()
-
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
@@ -72,13 +69,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Aceita o frontend do Render e testes locais
-        configuration.setAllowedOriginPatterns(List.of(
-                "https://espectrocare.onrender.com",
-                "https://espectro-care.onrender.com",
-                "http://localhost:*"
-        ));
-
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
