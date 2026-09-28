@@ -1,5 +1,6 @@
 package br.com.neurohelp.tcc_backend.Security;
 
+import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
 import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
 import jakarta.servlet.FilterChain;
@@ -52,10 +53,10 @@ public class SecurityFilter extends OncePerRequestFilter {
                 var subject = tokenService.validarToken(tokenJWT);
                 if (subject != null && !subject.trim().isEmpty()) {
 
-                    UserDetails usuario = (UserDetails) profissionalRepository.findByEmail(subject).orElse(null);
+                    UsuarioAutenticavel usuario = profissionalRepository.findByEmail(subject).orElse(null);
 
                     if (usuario == null) {
-                        usuario = (UserDetails) responsavelRepository.findByEmail(subject).orElse(null);
+                        usuario = responsavelRepository.findByEmail(subject).orElse(null);
                     }
 
                     if (usuario != null) {
@@ -64,7 +65,6 @@ public class SecurityFilter extends OncePerRequestFilter {
                     }
                 }
             } catch (Exception e) {
-                // Em rotas protegidas que falharem o token, apenas limpa a autenticação
                 SecurityContextHolder.clearContext();
             }
         }
@@ -76,7 +76,6 @@ public class SecurityFilter extends OncePerRequestFilter {
         var authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.replace("Bearer ", "").trim();
-            // Valida se o token retornado não é uma string vazia ou "null"/"undefined"
             if (!token.isEmpty() && !"null".equalsIgnoreCase(token) && !"undefined".equalsIgnoreCase(token)) {
                 return token;
             }
