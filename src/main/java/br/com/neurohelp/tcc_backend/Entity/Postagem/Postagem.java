@@ -30,6 +30,10 @@ public class Postagem {
 
     private String titulo;
 
+    // Apenas conteúdos selecionados pela equipe entram na API de Aprendizagem.
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean publicadoAprendizagem;
+
     @OneToMany(mappedBy = "postagem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Anexo> anexos = new ArrayList<>();
 

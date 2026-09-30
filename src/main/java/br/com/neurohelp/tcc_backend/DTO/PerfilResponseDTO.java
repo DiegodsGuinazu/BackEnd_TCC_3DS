@@ -1,10 +1,6 @@
 package br.com.neurohelp.tcc_backend.DTO;
 
 import br.com.neurohelp.tcc_backend.Entity.User.UserProf;
-import br.com.neurohelp.tcc_backend.Entity.User.UserResp;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
 
 public record PerfilResponseDTO(
         String id,
@@ -23,16 +19,12 @@ public record PerfilResponseDTO(
                 userProf.getEmail(),
                 userProf.getBio(),
                 userProf.getCpf(),
-                userProf.getEstado(),
                 userProf.getTelefone(),
+                userProf.getEstado(),
                 userProf.getNumRegistro()
 
 
         );
     }
 
-    @GetMapping
-    public ResponseEntity<PerfilResponseDTO> buscarPerfil(@AuthenticationPrincipal UserProf usuarioLogado) {
-        return ResponseEntity.ok(new PerfilResponseDTO(usuarioLogado));
-    }
 }
