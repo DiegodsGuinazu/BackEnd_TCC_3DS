@@ -1,0 +1,65 @@
+name: Validar backend
+
+on:
+  push:
+    branches: [main, feat/apis-protegidas-site-app]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: Testes (${{ matrix.banco }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        banco: [h2, postgres]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: espectrocare_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: senha-descartavel-ci
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SPRING_DATASOURCE_URL: ${{ matrix.banco == 'postgres' && 'jdbc:postgresql://localhost:5432/espectrocare_test' || 'jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE' }}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: ${{ matrix.banco == 'postgres' && 'org.postgresql.Driver' || 'org.h2.Driver' }}
+      SPRING_DATASOURCE_USERNAME: ${{ matrix.banco == 'postgres' && 'test' || 'sa' }}
+      SPRING_DATASOURCE_PASSWORD: ${{ matrix.banco == 'postgres' && 'senha-descartavel-ci' || '' }}
+      SPRING_JPA_DATABASE_PLATFORM: ${{ matrix.banco == 'postgres' && 'org.hibernate.dialect.PostgreSQLDialect' || 'org.hibernate.dialect.H2Dialect' }}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_SHOW_SQL: 'false'
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Executar testes e gerar JAR
+        run: bash gradlew test bootJar --no-daemon
+      - name: Preservar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testes-${{ matrix.banco }}
+          path: build/reports/tests/test/
+
+  docker:
+    name: Build Docker
+    needs: testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar imagem sem publicar
+        run: docker build -t tcc-backend:test .

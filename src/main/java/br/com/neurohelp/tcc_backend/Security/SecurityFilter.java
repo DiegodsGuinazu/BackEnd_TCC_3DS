@@ -1,6 +1,7 @@
 package br.com.neurohelp.tcc_backend.Security;
 
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
 import jakarta.servlet.FilterChain;
@@ -34,10 +35,10 @@ public class SecurityFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         return "OPTIONS".equalsIgnoreCase(method)
-                || path.equals("/auth/login")
-                || path.equals("/login")
-                || path.startsWith("/cadastro")
-                || path.startsWith("/h2-console")
+                || ("POST".equalsIgnoreCase(method) && (
+                        path.equals("/auth/login")
+                        || path.equals("/cadastro/profissional")
+                        || path.equals("/cadastro/responsavel")))
                 || path.equals("/error");
     }
 
@@ -48,33 +49,38 @@ public class SecurityFilter extends OncePerRequestFilter {
         var tokenJWT = recuperarToken(request);
 
         if (tokenJWT != null) {
-            try {
-                var subject = tokenService.validarToken(tokenJWT);
-                if (subject != null && !subject.trim().isEmpty()) {
-
-                    UsuarioAutenticavel usuario = profissionalRepository.findByEmail(subject).orElse(null);
-
-                    if (usuario == null) {
-                        usuario = responsavelRepository.findByEmail(subject).orElse(null);
-                    }
-
-                    if (usuario != null) {
-                        var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                    }
+            var token = tokenService.validarTokenDecodificado(tokenJWT);
+            if (token.isPresent()) {
+                UsuarioAutenticavel usuario = recuperarUsuario(token.get());
+                if (usuario != null) {
+                    var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
-            } catch (Exception e) {
-                SecurityContextHolder.clearContext();
             }
         }
 
         filterChain.doFilter(request, response);
     }
 
+    private UsuarioAutenticavel recuperarUsuario(DecodedJWT token) {
+        String email = token.getSubject();
+        if (email == null || email.isBlank()) return null;
+        String tipoPerfil = token.getClaim("tipoPerfil").asString();
+        if ("PROFISSIONAL".equals(tipoPerfil)) return profissionalRepository.findByEmail(email).orElse(null);
+        if ("RESPONSAVEL".equals(tipoPerfil)) return responsavelRepository.findByEmail(email).orElse(null);
+        if (!token.getClaim("tipoPerfil").isMissing()) return null;
+
+        // Compatibilidade com JWTs anteriores: somente uma identidade sem ambiguidade.
+        var profissional = profissionalRepository.findByEmail(email).orElse(null);
+        var responsavel = responsavelRepository.findByEmail(email).orElse(null);
+        if (profissional != null && responsavel != null) return null;
+        return profissional != null ? profissional : responsavel;
+    }
+
     private String recuperarToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String token = authorizationHeader.replace("Bearer ", "").trim();
+            String token = authorizationHeader.substring("Bearer ".length()).trim();
             if (!token.isEmpty() && !"null".equalsIgnoreCase(token) && !"undefined".equalsIgnoreCase(token)) {
                 return token;
             }

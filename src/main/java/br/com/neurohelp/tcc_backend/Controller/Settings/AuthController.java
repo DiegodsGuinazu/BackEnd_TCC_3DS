@@ -14,7 +14,6 @@ import java.util.Map;
 
     @RestController
     @RequestMapping("/auth")
-    @CrossOrigin(origins = "*")
     public class AuthController {
 
         private final profissionalRepository profissionalRepository;
@@ -32,11 +31,12 @@ import java.util.Map;
         @PostMapping("/login")
         public ResponseEntity<?> login(@RequestBody Login dados) {
 
-            UsuarioAutenticavel usuario = (UsuarioAutenticavel) profissionalRepository.findByEmail(dados.getEmail()).orElse(null);
-
-            if (usuario == null) {
-                usuario = (UsuarioAutenticavel) responsavelRepository.findByEmail(dados.getEmail()).orElse(null);
+            var profissional = profissionalRepository.findByEmail(dados.getEmail()).orElse(null);
+            var responsavel = responsavelRepository.findByEmail(dados.getEmail()).orElse(null);
+            if (profissional != null && responsavel != null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email ou senha inválidos.");
             }
+            UsuarioAutenticavel usuario = profissional != null ? profissional : responsavel;
 
             if (usuario == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email ou senha inválidos.");
