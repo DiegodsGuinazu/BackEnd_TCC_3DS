@@ -14,7 +14,7 @@ import java.time.ZoneOffset;
 @Service
 public class TokenService {
 
-    @Value("${api.security.token.secret:neurohelp-chave-secreta-super-segura-e-longa-123456}")
+    @Value("${api.security.token.secret}")
     private String secretKey;
 
     public String gerarToken(UsuarioAutenticavel usuario) {
