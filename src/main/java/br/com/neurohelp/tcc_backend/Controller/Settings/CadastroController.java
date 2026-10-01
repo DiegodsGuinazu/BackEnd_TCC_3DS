@@ -12,10 +12,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/cadastro")
 public class CadastroController {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final profissionalRepository profissionalRepository;
     private final responsavelRepository responsavelRepository;
@@ -34,6 +37,12 @@ public class CadastroController {
     @PostMapping("/profissional")
     public ResponseEntity<?> cadastrarProfissional(@Valid @RequestBody CadastroProfissionalDTO dto) {
         String email = normalizarEmail(dto.email());
+        if (!emailValido(email)) {
+            return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
+        }
+        if (!emailValido(email)) {
+            return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
+        }
         if (emailEmUso(email)) {
             return ResponseEntity.status(409).body("Não foi possível concluir o cadastro com os dados informados.");
         }
@@ -75,8 +84,12 @@ public class CadastroController {
     }
 
     private boolean emailEmUso(String email) {
-        return profissionalRepository.findByEmail(email).isPresent()
-                || responsavelRepository.findByEmail(email).isPresent();
+        return profissionalRepository.findByEmailIgnoreCase(email).isPresent()
+                || responsavelRepository.findByEmailIgnoreCase(email).isPresent();
+    }
+
+    private boolean emailValido(String email) {
+        return EMAIL_PATTERN.matcher(email).matches();
     }
 
     private String normalizarEmail(String valor) {
