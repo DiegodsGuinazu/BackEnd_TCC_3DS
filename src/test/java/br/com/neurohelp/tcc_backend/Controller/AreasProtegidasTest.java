@@ -249,7 +249,7 @@ class AreasProtegidasTest {
     void cadastroNaoPodeSobrescreverContaExistentePorId() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\":" + profissional.getId() + ",\"nome\":\"Outra conta\","
-                        + "\"email\":\"outra@teste.invalid\",\"cpf\":\"66666666666\",\"senha\":\"outra-senha\"}"))
+                        + "\"email\":\"outra@teste.invalid\",\"cpf\":\"66666666666\",\"senha\":\"Outra@123\"}"))
                 .andExpect(status().isOk());
         assertEquals(2, profissionais.count());
         assertEquals("profissional@teste.invalid", profissionais.findByEmail("profissional@teste.invalid").orElseThrow().getEmail());
@@ -312,9 +312,10 @@ class AreasProtegidasTest {
     @Test
     void responsavelPodeCadastrarSemCpfEComDadosNormalizados() throws Exception {
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\\"nome\\\":\\\"Sem CPF\\\",\\\"email\\\":\\\"semcpf@teste.invalid\\\","
-                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":null,"
-                        + "\\\"telefone\\\":\\\"(11) 98765-4321\\\",\\\"cidade\\\":\\\"São Paulo\\\"}"))
+                .content("""
+                        {"nome":"Sem CPF","email":"semcpf@teste.invalid","senha":"Senha@123",
+                         "cpf":null,"telefone":"(11) 98765-4321","cidade":"São Paulo"}
+                        """))
                 .andExpect(status().isOk());
 
         UserResp salvo = responsaveis.findByEmail("semcpf@teste.invalid").orElseThrow();
@@ -327,8 +328,9 @@ class AreasProtegidasTest {
     void doisResponsaveisPodemTerCpfNull() throws Exception {
         for (int i = 1; i <= 2; i++) {
             mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                    .content("{\\\"nome\\\":\\\"Resp " + i + "\\\",\\\"email\\\":\\\"resp-null-" + i
-                            + "@teste.invalid\\\",\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":null}"))
+                    .content("""
+                            {"nome":"Resp %d","email":"resp-null-%d@teste.invalid","senha":"Senha@123","cpf":null}
+                            """.formatted(i, i)))
                     .andExpect(status().isOk());
         }
 
@@ -338,10 +340,11 @@ class AreasProtegidasTest {
     @Test
     void cadastroNormalizaCpfTelefoneEmailCidadeEFormacao() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\\"nome\\\":\\\"Profissional\\\",\\\"email\\\":\\\"PROF-NORMALIZA@TESTE.INVALID \\","
-                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":\\\"123.456.789-00\\\","
-                        + "\\\"telefone\\\":\\\"(11) 3456-7890\\\",\\\"estado\\\":\\\" São Paulo \\","
-                        + "\\\"cidade\\\":\\\" Campinas \\",\\\"formacao\\\":\\\" Psicologia \\\"}"))
+                .content("""
+                        {"nome":"Profissional","email":"PROF-NORMALIZA@TESTE.INVALID ","senha":"Senha@123",
+                         "cpf":"123.456.789-00","telefone":"(11) 3456-7890","estado":" São Paulo ",
+                         "cidade":" Campinas ","formacao":" Psicologia "}
+                        """))
                 .andExpect(status().isOk());
 
         UserProf salvo = profissionais.findByEmail("prof-normaliza@teste.invalid").orElseThrow();
@@ -355,24 +358,28 @@ class AreasProtegidasTest {
     @Test
     void cadastroRejeitaCpfTelefoneESenhaInvalidos() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\\"nome\\\":\\\"Sem CPF\\\",\\\"email\\\":\\\"sem-cpf-prof@teste.invalid\\\","
-                        + "\\\"senha\\\":\\\"Senha@123\\\"}"))
+                .content("""
+                        {"nome":"Sem CPF","email":"sem-cpf-prof@teste.invalid","senha":"Senha@123"}
+                        """))
                 .andExpect(status().isBadRequest());
 
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\\"nome\\\":\\\"CPF curto\\\",\\\"email\\\":\\\"cpf-curto@teste.invalid\\\","
-                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":\\\"1234567890\\\"}"))
+                .content("""
+                        {"nome":"CPF curto","email":"cpf-curto@teste.invalid","senha":"Senha@123","cpf":"1234567890"}
+                        """))
                 .andExpect(status().isBadRequest());
 
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\\"nome\\\":\\\"Telefone longo\\\",\\\"email\\\":\\\"tel-longo@teste.invalid\\\","
-                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"telefone\\\":\\\"119999999999\\\"}"))
+                .content("""
+                        {"nome":"Telefone longo","email":"tel-longo@teste.invalid","senha":"Senha@123",
+                         "telefone":"119999999999"}
+                        """))
                 .andExpect(status().isBadRequest());
 
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\\"nome\\\":\\\"Senha fraca\\\",\\\"email\\\":\\\"senha-fraca@teste.invalid\\\","
-                        + "\\\"senha\\\":\\\"senha123\\\"}"))
+                .content("""
+                        {"nome":"Senha fraca","email":"senha-fraca@teste.invalid","senha":"senha123"}
+                        """))
                 .andExpect(status().isBadRequest());
     }
-
 }
