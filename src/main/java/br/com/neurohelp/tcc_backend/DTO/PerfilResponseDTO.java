@@ -10,9 +10,11 @@ public record PerfilResponseDTO(
         String cpf,
         String telefone,
         String estado,
+        String cidade,
+        String formacao,
         String numRegistro
 ) {
-    public PerfilResponseDTO(UserProf userProf){
+    public PerfilResponseDTO(UserProf userProf) {
         this(
                 String.valueOf(userProf.getId()),
                 userProf.getNome(),
@@ -21,10 +23,9 @@ public record PerfilResponseDTO(
                 userProf.getCpf(),
                 userProf.getTelefone(),
                 userProf.getEstado(),
+                userProf.getCidade(),
+                userProf.getFormacao(),
                 userProf.getNumRegistro()
-
-
         );
     }
-
 }
