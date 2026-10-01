@@ -60,7 +60,7 @@ class AreasProtegidasTest {
         profissional.setNome("Profissional de teste");
         profissional.setEmail("profissional@teste.invalid");
         profissional.setCpf("22222222222");
-        profissional.setSenha(encoder.encode("senha-teste"));
+        profissional.setSenha(encoder.encode("Senha@123"));
         profissional.setTelefone("11999999999");
         profissional.setEstado("SP");
         profissional.setBio("Apresentação profissional");
@@ -71,7 +71,7 @@ class AreasProtegidasTest {
         responsavel.setNome("Responsável de teste");
         responsavel.setEmail("responsavel@teste.invalid");
         responsavel.setCpf("33333333333");
-        responsavel.setSenha(encoder.encode("senha-teste"));
+        responsavel.setSenha(encoder.encode("Senha@123"));
         responsaveis.saveAndFlush(responsavel);
 
         Categoria categoria = new Categoria();
@@ -234,13 +234,13 @@ class AreasProtegidasTest {
     @Test
     void cadastrosContinuamPublicosELoginDoResponsavelGeraToken() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Novo profissional\",\"email\":\"novo-prof@teste.invalid\",\"cpf\":\"44444444444\",\"senha\":\"senha-teste\"}"))
+                .content("{\"nome\":\"Novo profissional\",\"email\":\"novo-prof@teste.invalid\",\"cpf\":\"44444444444\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Novo responsável\",\"email\":\"novo-resp@teste.invalid\",\"cpf\":\"55555555555\",\"senha\":\"senha-teste\"}"))
+                .content("{\"nome\":\"Novo responsável\",\"email\":\"novo-resp@teste.invalid\",\"cpf\":\"55555555555\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"novo-resp@teste.invalid\",\"senha\":\"senha-teste\"}"))
+                .content("{\"email\":\"novo-resp@teste.invalid\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.token", not(emptyString())))
                 .andExpect(jsonPath("$.email").value("novo-resp@teste.invalid"));
     }
@@ -265,7 +265,7 @@ class AreasProtegidasTest {
     @Test
     void cadastroRejeitaEmailJaExistenteNoOutroTipoDePerfil() throws Exception {
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Outra conta\",\"email\":\"profissional@teste.invalid\",\"cpf\":\"77777777777\",\"senha\":\"senha-teste\"}"))
+                .content("{\"nome\":\"Outra conta\",\"email\":\"profissional@teste.invalid\",\"cpf\":\"77777777777\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isConflict());
         assertEquals(1, responsaveis.count());
     }
@@ -285,7 +285,7 @@ class AreasProtegidasTest {
         duplicado.setNome("Profissional com email legado duplicado");
         duplicado.setEmail(responsavel.getEmail());
         duplicado.setCpf("88888888888");
-        duplicado.setSenha(encoder.encode("senha-teste"));
+        duplicado.setSenha(encoder.encode("Senha@123"));
         profissionais.saveAndFlush(duplicado);
 
         mvc.perform(get("/api/auth/me").header("Authorization", tokenResponsavel))
@@ -297,7 +297,7 @@ class AreasProtegidasTest {
         mvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + legado))
                 .andExpect(status().isUnauthorized());
         mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"responsavel@teste.invalid\",\"senha\":\"senha-teste\"}"))
+                .content("{\"email\":\"responsavel@teste.invalid\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
