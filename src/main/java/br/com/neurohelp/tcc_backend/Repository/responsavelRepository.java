@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface responsavelRepository extends JpaRepository<UserResp, Long> {
     Optional<UserResp> findByEmail(String email);
+    Optional<UserResp> findByEmailIgnoreCase(String email);
 }
