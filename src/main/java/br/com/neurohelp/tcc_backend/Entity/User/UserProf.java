@@ -20,18 +20,22 @@ public class UserProf implements UsuarioAutenticavel {
 
     private String bio;
 
-    @Column(unique = true,  nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String senha;
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true, nullable = false)
     private String cpf;
 
     private String telefone;
 
     private String estado;
+
+    private String cidade;
+
+    private String formacao;
 
     private String numRegistro;
 
