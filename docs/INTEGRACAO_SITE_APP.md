@@ -198,3 +198,45 @@ entre tipos em requisições sequenciais; unificar a identidade ou impor
 unicidade global no banco é a evolução necessária para cobrir também
 cadastros simultâneos. A validação tipada do JWT impede troca de conta mesmo
 se uma duplicidade desse tipo acontecer. Não foi feita migração de contas.
+
+
+## Atualização de cadastro e perfis
+
+Os contratos existentes de autenticação foram preservados: \`POST /auth/login\`
+continua retornando somente \`token\` e \`email\`, e o tipo do usuário continua
+sendo obtido por \`GET /api/auth/me\`. Isso evita quebra nos clientes Android e
+web que já consomem o login atual.
+
+Os cadastros agora aceitam os campos aditivos \`cidade\` para ambos os perfis e
+\`formacao\` para profissional. Clientes antigos podem continuar omitindo esses
+campos. CPF e telefone são normalizados para somente dígitos antes da
+persistência. O CPF profissional continua obrigatório. Para responsável, \`cpf\`
+pode ser \`null\`; valores vazios também são normalizados para \`null\`.
+
+A senha de novos cadastros deve ter no mínimo oito caracteres e incluir letra
+maiúscula, letra minúscula, número e caractere especial. Isso não altera senhas
+já persistidas nem o contrato de login.
+
+### Alteração necessária no PostgreSQL de produção
+
+A entidade de responsável não exige mais \`NOT NULL\` no CPF, mas
+\`spring.jpa.hibernate.ddl-auto=update\` não deve ser considerado suficiente
+para remover uma constraint já existente. Antes do deploy, conferir o nome real
+da tabela e da coluna no banco de produção. Se a tabela for de fato
+\`user_resp\` e a coluna \`cpf\`, a alteração esperada é:
+
+\`\`\`sql
+ALTER TABLE user_resp
+ALTER COLUMN cpf DROP NOT NULL;
+\`\`\`
+
+Executar somente depois de confirmar a estrutura com o catálogo do PostgreSQL e
+preferencialmente com backup/homologação. A constraint de unicidade deve ser
+mantida: PostgreSQL permite vários valores \`NULL\` em uma coluna \`UNIQUE\`.
+
+### Compatibilidade
+
+As mudanças são aditivas: nenhum endpoint foi renomeado, nenhum campo antigo foi
+removido e os códigos de sucesso do cadastro/login permanecem os mesmos. DTOs
+de perfil e de listagem de profissionais passam a poder incluir \`cidade\` e
+\`formacao\`; clientes que ignoram campos desconhecidos permanecem compatíveis.
