@@ -308,4 +308,71 @@ class AreasProtegidasTest {
         long segundos = Duration.between(antes, expira).getSeconds();
         assertTrue(segundos >= 7198 && segundos <= 7200);
     }
+
+    @Test
+    void responsavelPodeCadastrarSemCpfEComDadosNormalizados() throws Exception {
+        mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\\"nome\\\":\\\"Sem CPF\\\",\\\"email\\\":\\\"semcpf@teste.invalid\\\","
+                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":null,"
+                        + "\\\"telefone\\\":\\\"(11) 98765-4321\\\",\\\"cidade\\\":\\\"São Paulo\\\"}"))
+                .andExpect(status().isOk());
+
+        UserResp salvo = responsaveis.findByEmail("semcpf@teste.invalid").orElseThrow();
+        assertEquals(null, salvo.getCpf());
+        assertEquals("11987654321", salvo.getTelefone());
+        assertEquals("São Paulo", salvo.getCidade());
+    }
+
+    @Test
+    void doisResponsaveisPodemTerCpfNull() throws Exception {
+        for (int i = 1; i <= 2; i++) {
+            mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\\\"nome\\\":\\\"Resp " + i + "\\\",\\\"email\\\":\\\"resp-null-" + i
+                            + "@teste.invalid\\\",\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":null}"))
+                    .andExpect(status().isOk());
+        }
+
+        assertEquals(2, responsaveis.findAll().stream().filter(usuario -> usuario.getCpf() == null).count());
+    }
+
+    @Test
+    void cadastroNormalizaCpfTelefoneEmailCidadeEFormacao() throws Exception {
+        mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\\"nome\\\":\\\"Profissional\\\",\\\"email\\\":\\\"PROF-NORMALIZA@TESTE.INVALID \\","
+                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":\\\"123.456.789-00\\\","
+                        + "\\\"telefone\\\":\\\"(11) 3456-7890\\\",\\\"estado\\\":\\\" São Paulo \\","
+                        + "\\\"cidade\\\":\\\" Campinas \\",\\\"formacao\\\":\\\" Psicologia \\\"}"))
+                .andExpect(status().isOk());
+
+        UserProf salvo = profissionais.findByEmail("prof-normaliza@teste.invalid").orElseThrow();
+        assertEquals("12345678900", salvo.getCpf());
+        assertEquals("1134567890", salvo.getTelefone());
+        assertEquals("São Paulo", salvo.getEstado());
+        assertEquals("Campinas", salvo.getCidade());
+        assertEquals("Psicologia", salvo.getFormacao());
+    }
+
+    @Test
+    void cadastroRejeitaCpfTelefoneESenhaInvalidos() throws Exception {
+        mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\\"nome\\\":\\\"Sem CPF\\\",\\\"email\\\":\\\"sem-cpf-prof@teste.invalid\\\","
+                        + "\\\"senha\\\":\\\"Senha@123\\\"}"))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\\"nome\\\":\\\"CPF curto\\\",\\\"email\\\":\\\"cpf-curto@teste.invalid\\\","
+                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"cpf\\\":\\\"1234567890\\\"}"))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\\"nome\\\":\\\"Telefone longo\\\",\\\"email\\\":\\\"tel-longo@teste.invalid\\\","
+                        + "\\\"senha\\\":\\\"Senha@123\\\",\\\"telefone\\\":\\\"119999999999\\\"}"))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\\"nome\\\":\\\"Senha fraca\\\",\\\"email\\\":\\\"senha-fraca@teste.invalid\\\","
+                        + "\\\"senha\\\":\\\"senha123\\\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
 }
