@@ -40,9 +40,6 @@ public class CadastroController {
         if (!emailValido(email)) {
             return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
         }
-        if (!emailValido(email)) {
-            return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
-        }
         if (emailEmUso(email)) {
             return ResponseEntity.status(409).body("Não foi possível concluir o cadastro com os dados informados.");
         }
@@ -66,6 +63,9 @@ public class CadastroController {
     @PostMapping("/responsavel")
     public ResponseEntity<?> cadastrarResponsavel(@Valid @RequestBody CadastroResponsavelDTO dto) {
         String email = normalizarEmail(dto.email());
+        if (!emailValido(email)) {
+            return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
+        }
         if (emailEmUso(email)) {
             return ResponseEntity.status(409).body("Não foi possível concluir o cadastro com os dados informados.");
         }
