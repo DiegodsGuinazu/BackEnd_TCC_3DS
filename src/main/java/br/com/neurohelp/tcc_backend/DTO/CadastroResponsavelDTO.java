@@ -1,13 +1,12 @@
 package br.com.neurohelp.tcc_backend.DTO;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CadastroResponsavelDTO(
         @NotBlank @Size(max = 120) String nome,
-        @NotBlank @Email @Size(max = 254) String email,
+        @NotBlank @Size(max = 254) String email,
         @NotBlank
         @Pattern(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d\\s]).{8,}$",
