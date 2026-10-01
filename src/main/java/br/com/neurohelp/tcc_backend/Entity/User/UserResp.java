@@ -18,14 +18,16 @@ public class UserResp implements UsuarioAutenticavel {
 
     private String nome;
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
     private String telefone;
 
     private String estado;
 
-    @Column(unique = true,nullable = false)
+    private String cidade;
+
+    @Column(unique = true)
     private String cpf;
 
     @Column(nullable = false)
@@ -33,7 +35,7 @@ public class UserResp implements UsuarioAutenticavel {
 
     @Override
     public String getEmail() {
-        return email    ;
+        return email;
     }
 
     @Override
@@ -46,4 +48,3 @@ public class UserResp implements UsuarioAutenticavel {
         return List.of();
     }
 }
-
