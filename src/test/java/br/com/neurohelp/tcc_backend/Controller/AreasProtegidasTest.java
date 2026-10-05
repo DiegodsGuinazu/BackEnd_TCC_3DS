@@ -95,8 +95,8 @@ class AreasProtegidasTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/api/auth/me", "/api/profissionais", "/api/profissionais/1",
-            "/api/aprendizagem", "/api/aprendizagem/1", "/api/perfil", "/api/perfil-responsavel"})
+    @ValueSource(strings = {"/api/auth/me", "/api/profissionais/1",
+            "/api/aprendizagem/1", "/api/perfil", "/api/perfil-responsavel"})
     void semTokenRetorna401Json(String rota) throws Exception {
         mvc.perform(get(rota)).andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -106,7 +106,7 @@ class AreasProtegidasTest {
     @ParameterizedTest
     @ValueSource(strings = {"Bearer token-invalido", "Bearer null", "Bearer undefined", "Basic abc", "Bearer "})
     void tokenInvalidoRetorna401(String header) throws Exception {
-        mvc.perform(get("/api/profissionais").header("Authorization", header))
+        mvc.perform(get("/api/profissionais/" + profissional.getId()).header("Authorization", header))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -117,9 +117,37 @@ class AreasProtegidasTest {
         String falso = JWT.create().withIssuer("API EspectroCare").withSubject(profissional.getEmail())
                 .withExpiresAt(Instant.now().plusSeconds(60)).sign(Algorithm.HMAC256("outra-chave-de-teste"));
         for (String token : new String[]{expirado, falso}) {
-            mvc.perform(get("/api/aprendizagem").header("Authorization", "Bearer " + token))
+            mvc.perform(get("/api/aprendizagem/" + publicado.getId()).header("Authorization", "Bearer " + token))
                     .andExpect(status().isUnauthorized());
         }
+    }
+
+    @Test
+    void visitantesPodemVerCardsMasNaoDetalhesOuRascunhos() throws Exception {
+        mvc.perform(get("/api/profissionais"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nome").value(profissional.getNome()))
+                .andExpect(jsonPath("$[0].cpf").doesNotExist())
+                .andExpect(jsonPath("$[0].senha").doesNotExist())
+                .andExpect(jsonPath("$[0].email").doesNotExist());
+        mvc.perform(get("/api/aprendizagem"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].titulo").value(publicado.getTitulo()))
+                .andExpect(jsonPath("$[0].conteudoHtml").doesNotExist());
+        mvc.perform(get("/api/profissionais/" + profissional.getId())).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/aprendizagem/" + publicado.getId())).andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/profissionais", "/api/aprendizagem"})
+    void listagemPublicaComTokenInvalidoContinuaDisponivel(String rota) throws Exception {
+        mvc.perform(get(rota).header("Authorization", "Bearer token-invalido"))
+                .andExpect(status().isOk());
+        mvc.perform(post(rota).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(put(rota).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(delete(rota)).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -227,7 +255,7 @@ class AreasProtegidasTest {
                 .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isForbidden());
         mvc.perform(get("/api/profissionais").header("Origin", "https://neuro-help-psi.vercel.app"))
-                .andExpect(status().isUnauthorized())
+                .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "https://neuro-help-psi.vercel.app"));
     }
 

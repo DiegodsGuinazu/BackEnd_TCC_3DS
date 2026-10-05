@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login",
                                 "/cadastro/profissional", "/cadastro/responsavel").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // Somente as listagens GET são públicas; detalhes e escrita continuam protegidos.
+                        .requestMatchers(HttpMethod.GET, "/api/profissionais", "/api/aprendizagem").permitAll()
                         // O tipo vem do usuário carregado do banco, nunca do cliente.
                         .requestMatchers("/api/perfil", "/api/perfil/**")
                         .access((authentication, context) -> new AuthorizationDecision(

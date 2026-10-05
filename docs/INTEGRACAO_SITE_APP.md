@@ -12,10 +12,11 @@ consumir as novas rotas. A Home hospedada no frontend continua pública.
 | POST | `/cadastro/profissional` | Público | Cria profissional; sucesso em texto, como antes |
 | POST | `/cadastro/responsavel` | Público | Cria responsável; sucesso em texto, como antes |
 | GET | `/api/auth/me` | Ambos os perfis, com JWT | Identifica o usuário logado |
-| GET | `/api/profissionais` | Ambos os perfis, com JWT | Lista dados de apresentação dos profissionais cadastrados |
+| GET | `/api/profissionais` | Público | Lista dados de apresentação dos profissionais cadastrados |
 | GET | `/api/profissionais/{id}` | Ambos os perfis, com JWT | Detalhe do profissional |
-| GET | `/api/aprendizagem` | Ambos os perfis, com JWT | Lista resumos dos conteúdos selecionados pela equipe |
+| GET | `/api/aprendizagem` | Público | Lista resumos dos conteúdos selecionados pela equipe |
 | GET | `/api/aprendizagem/{id}` | Ambos os perfis, com JWT | Conteúdo completo de um artigo selecionado |
+| GET/PUT | `/api/conta/foto` | Ambos os perfis, com JWT | Consulta/atualiza somente a foto da própria conta |
 | GET/PUT | `/api/perfil` | Apenas profissional, com JWT | Consulta/atualiza seu próprio perfil |
 | GET/PUT | `/api/perfil-responsavel` | Apenas responsável, com JWT | Consulta/atualiza seu próprio perfil |
 | Qualquer | `/publicacao/**` | Bloqueado | Publicação aguarda autorização da equipe |
@@ -85,7 +86,7 @@ Não retorna entidades, relações JPA ou anexos. As datas usam a modelagem
 existente `LocalDateTime`, sem informação de fuso. Lista vazia retorna `200 []`;
 ID inexistente ou conteúdo não selecionado retorna `404`.
 
-Sem JWT válido, a segurança retorna:
+Nas rotas protegidas, sem JWT válido, a segurança retorna:
 
 ```json
 {"status":401,"mensagem":"Autenticação necessária ou token inválido."}
@@ -112,10 +113,11 @@ banco também retornam `409`, sem expor a constraint ou o SQL.
 
 ## Integração nos clientes
 
-No site, a Home fica pública. Ao abrir Profissionais ou Aprendizagem, validar
-o token com `/api/auth/me` ou consultar diretamente a API protegida. Em `401`,
-limpar a autenticação local e redirecionar para Login/Cadastro; depois do login,
-voltar para a área solicitada. Em `403`, exibir falta de permissão, sem repetir
+No site, Home e as listagens de Profissionais e Aprendizagem ficam públicas.
+Ao selecionar Ver perfil ou Saiba mais, validar o token com `/api/auth/me`.
+Os detalhes continuam exigindo JWT também na API. Em `401`, limpar a sessão
+e redirecionar para Login/Cadastro, preservando a URL do detalhe e seu ID
+para retornar após o login. Em `403`, exibir falta de permissão, sem repetir
 o login automaticamente. Um erro de rede/`5xx` deve permitir nova tentativa.
 
 No Android, usar o mesmo cabeçalho no cliente HTTP e encaminhar `401` para
@@ -165,7 +167,7 @@ Testes usam segredo fictício e H2 em memória; não usam o banco de produção.
 
 Definir `CORS_ALLOWED_ORIGINS` com origens exatas separadas por vírgula,
 sem caminhos ou barra final. O padrão inclui
-`https://neuro-help-psi.vercel.app`, localhost nas portas 3000, 5500 e 8080,
+`https://espectro-care.onrender.com`, localhost nas portas 3000, 5500 e 8080,
 e `127.0.0.1:5500`. Se o domínio/porta do site for outro, adicioná-lo antes
 da integração. Em produção, preferir apenas os domínios realmente usados.
 Android normalmente não envia `Origin` e usa o mesmo JWT. CORS não substitui
@@ -240,3 +242,27 @@ As mudanças são aditivas: nenhum endpoint foi renomeado, nenhum campo antigo f
 removido e os códigos de sucesso do cadastro/login permanecem os mesmos. DTOs
 de perfil e de listagem de profissionais passam a poder incluir \`cidade\` e
 \`formacao\`; clientes que ignoram campos desconhecidos permanecem compatíveis.
+
+## Foto de perfil da própria conta
+
+`GET /api/conta/foto` retorna `{ "fotoPerfil": null }` quando não há foto, ou
+uma data URL JPEG no campo `fotoPerfil`. `PUT /api/conta/foto` recebe esse mesmo
+campo com uma data URL JPEG/PNG válida. Ambas exigem JWT; o destino vem do
+principal autenticado e nunca de um ID ou email recebido no corpo.
+
+O cliente web reduz a imagem para 256 × 256 antes de enviar. A API aceita
+até 128 KB de imagem decodificada, dimensões até 1024 × 1024 e até 180.000
+caracteres no campo. A API decodifica, recorta e reencodifica como JPEG 256 × 256,
+descartando metadados. Arquivos inválidos retornam 400 sem substituir a foto.
+
+A foto fica na coluna opcional TEXT `foto_perfil` de `user_prof` ou `user_resp`.
+O `ddl-auto=update` atual cria as colunas ao iniciar; não depende de disco
+persistente no Render. As respostas dos endpoints anteriores e seus DTOs
+continuam iguais, incluindo os contratos utilizados pelo aplicativo Android.
+
+### Postagem de demonstração
+
+O script `docs/sql/01_postagem_teste.sql` cria a postagem `[TESTE] Conheça a área
+de Aprendizagem` uma única vez por título. Execute no PostgreSQL/Neon usado pela
+API para que o card de teste apareça. O script também contém a instrução opcional
+de remoção, restrita a esse título. Ele não é executado automaticamente no deploy.

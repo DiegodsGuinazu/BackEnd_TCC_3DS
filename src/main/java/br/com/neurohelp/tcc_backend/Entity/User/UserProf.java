@@ -1,6 +1,7 @@
 package br.com.neurohelp.tcc_backend.Entity.User;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,6 +18,11 @@ public class UserProf implements UsuarioAutenticavel {
     private int id;
 
     private String nome;
+
+    // Imagem compacta persistida; acessível apenas pela rota autenticada de foto.
+    @JsonIgnore
+    @Column(columnDefinition = "TEXT")
+    private String fotoPerfil;
 
     private String bio;
 
