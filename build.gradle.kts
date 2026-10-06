@@ -55,4 +55,5 @@ tasks.register<JavaExec>("primeiroConvite") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("br.com.neurohelp.tcc_backend.BootstrapConvite")
     javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
+	systemProperty("spring.devtools.restart.enabled", "false")
 }
