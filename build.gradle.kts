@@ -54,5 +54,8 @@ tasks.register<JavaExec>("primeiroConvite") {
     description = "Gera o primeiro convite em arquivo privado, sem servidor HTTP."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("br.com.neurohelp.tcc_backend.BootstrapConvite")
+    // O comando precisa executar uma vez e propagar falhas ao Gradle.
+    // O restart do DevTools recriava o arquivo e ocultava a falha no restartedMain.
+    systemProperty("spring.devtools.restart.enabled", "false")
     javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
 }
