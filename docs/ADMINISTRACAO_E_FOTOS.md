@@ -40,6 +40,8 @@ java -Dloader.main=br.com.neurohelp.tcc_backend.BootstrapConvite \
 
 O arquivo de destino deve ser novo e o diretório deve existir. O comando não sobrescreve arquivos: configura `0600` em POSIX ou ACL exclusiva do operador no Windows. Não imprime o link. Se não puder proteger ou escrever o arquivo, falha; uma falha de escrita após a emissão revoga o convite. Execute com um operador autorizado a configurar as permissões. Não use saída de terminal, logs, diretórios públicos ou diretórios servidos pelo site como destino.
 
+A tarefa Gradle desativa o reinício do DevTools para executar o gerador uma única vez e devolver falhas ao terminal. Pacotes anteriores devem receber a linha `systemProperty("spring.devtools.restart.enabled", "false")` dentro de `tasks.register<JavaExec>("primeiroConvite")` no `build.gradle.kts`. Em uma nova tentativa, escolha outro arquivo de saída; uma tentativa com falha pode deixar um arquivo vazio. Não use somente `BUILD SUCCESSFUL` como confirmação: confira a mensagem de convite gravado e o arquivo criado.
+
 Abra o arquivo privado, compartilhe o link completo por canal seguro e apague esse arquivo após o uso. O token fica no fragmento `#token=...`, evitando logs de URL do servidor e Referer. A página remove o fragmento do histórico após lê-lo; para recarregar um cadastro ainda não concluído, abra novamente o link original. A validação usa POST e o token permanece somente na memória do navegador.
 
 ## Uso e revogação
