@@ -48,6 +48,13 @@ jobs:
           cache: gradle
       - name: Executar testes e gerar JAR
         run: bash gradlew test bootJar --no-daemon
+      - name: Validar migração PostgreSQL e idempotência
+        if: matrix.banco == 'postgres'
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-05-convites-admin.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-05-convites-admin.sql
       - name: Preservar relatórios
         if: always()
         uses: actions/upload-artifact@v4

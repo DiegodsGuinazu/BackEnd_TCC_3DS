@@ -6,6 +6,8 @@ import br.com.neurohelp.tcc_backend.Entity.User.UserResp;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -27,6 +29,8 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@Profile("!bootstrap-convite")
 public class SecurityConfig {
 
     private final SecurityFilter securityFilter;
@@ -58,7 +62,13 @@ public class SecurityConfig {
                         // Libera todas as requisições OPTIONS do navegador (CORS Preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login",
-                                "/cadastro/profissional", "/cadastro/responsavel").permitAll()
+                                "/cadastro/profissional", "/cadastro/responsavel",
+                                "/cadastro/admin", "/cadastro/admin/convite/validar").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/profissionais/*/foto").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/aprendizagem", "/api/aprendizagem/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/aprendizagem", "/api/aprendizagem/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/aprendizagem", "/api/aprendizagem/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
                         // Somente as listagens GET são públicas; detalhes e escrita continuam protegidos.
                         .requestMatchers(HttpMethod.GET, "/api/profissionais", "/api/aprendizagem").permitAll()
@@ -69,6 +79,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/perfil-responsavel", "/api/perfil-responsavel/**")
                         .access((authentication, context) -> new AuthorizationDecision(
                                 authentication.get().getPrincipal() instanceof UserResp))
+                        .requestMatchers("/api/conta/foto", "/usuarios/**")
+                        .access((authentication, context) -> new AuthorizationDecision(
+                                authentication.get().getPrincipal() instanceof UserResp
+                                || authentication.get().getPrincipal() instanceof UserProf))
                         // A publicação aguarda um perfil de equipe/administrador.
                         .requestMatchers("/publicacao/**", "/h2-console/**").denyAll()
                         .anyRequest().authenticated()

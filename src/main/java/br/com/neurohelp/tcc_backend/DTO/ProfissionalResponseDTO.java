@@ -11,7 +11,8 @@ public record ProfissionalResponseDTO(
         String estado,
         String cidade,
         String formacao,
-        String numRegistro
+        String numRegistro,
+        String fotoPerfilUrl
 ) {
     public ProfissionalResponseDTO(UserProf usuario) {
         this(
@@ -22,7 +23,8 @@ public record ProfissionalResponseDTO(
                 usuario.getEstado(),
                 usuario.getCidade(),
                 usuario.getFormacao(),
-                usuario.getNumRegistro()
+                usuario.getNumRegistro(),
+                usuario.getFotoPerfil() == null ? null : "/api/profissionais/" + usuario.getId() + "/foto"
         );
     }
 }

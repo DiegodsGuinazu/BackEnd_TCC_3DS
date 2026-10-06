@@ -1,0 +1,814 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000000000000000000000000000000000000..6f400d462345aa43627dac35cd6f64d0d6020d2c
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,2 @@
++tests/node_modules/
++tests/resultados/
+diff --git a/assets/css/admin.css b/assets/css/admin.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..facb7bf48b019b43f41ed9fbffa66ecf05fc9ac7
+--- /dev/null
++++ b/assets/css/admin.css
+@@ -0,0 +1,26 @@
++[hidden] { display: none !important; }
++.admin-shell { max-width: 1000px; margin: 36px auto; padding: 24px; color: #174f58; font-family: Nunito, Arial, sans-serif; box-sizing: border-box; line-height: 1.55; }
++.admin-narrow { max-width: 560px; }
++.admin-logo { width: 170px; margin-bottom: 24px; }
++.admin-panel { background: #f4faf7; padding: 28px; border: 1px solid #cce4db; border-radius: 20px; }
++.admin-shell h1 { font-size: clamp(24px, 4vw, 34px); margin: 20px 0 12px; line-height: 1.2; }
++.admin-shell p { margin: 10px 0; }
++.admin-panel h2 { margin: 18px 0 10px; }
++.admin-shell label, .admin-editor label { display: block; margin: 16px 0 6px; font-weight: 700; }
++.admin-shell input, .admin-editor input, .admin-editor textarea { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 10px; border: 1px solid #688084; font: inherit; background: white; min-width: 0; }
++.admin-shell p, .admin-row { overflow-wrap: anywhere; }
++.admin-shell button, .admin-actions button, .admin-toolbar button, .admin-editor button { background: #176c61; color: white; border: 0; border-radius: 10px; padding: 12px 18px; font: inherit; font-weight: 700; cursor: pointer; margin: 8px 0; }
++.admin-shell a, .admin-toolbar a { color: #176c61; }
++.admin-shell button:disabled, .admin-editor button:disabled { opacity: .6; cursor: wait; }
++.admin-shell :focus-visible, .admin-toolbar :focus-visible, .admin-editor :focus-visible, .admin-actions :focus-visible { outline: 3px solid #188ca2; outline-offset: 4px; }
++.admin-top, .admin-toolbar, .admin-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
++.admin-toolbar, #adminAprendizagemStatus { width: 90%; max-width: 1150px; margin: 18px auto; }
++.admin-actions { margin-top: 14px; justify-content: flex-start; }
++.admin-actions .admin-delete { background: #a83030; }
++.pagina-aprendizagem .admin-actions button { margin: 0; }
++.pagina-aprendizagem .admin-actions .admin-delete { background: #a83030; }
++.admin-row { border-top: 1px solid #cce4db; padding: 16px 0; }
++.admin-editor { margin: auto; border: 1px solid #cce4db; border-radius: 18px; max-width: 700px; width: calc(100% - 48px); max-height: 85vh; overflow: auto; padding: 24px; color: #174f58; font-family: Nunito, Arial, sans-serif; line-height: 1.55; }
++.admin-editor::backdrop { background: #073b5c99; }
++.admin-editor textarea { min-height: 240px; resize: vertical; }
++@media (max-width: 520px) { .admin-shell { padding: 16px; margin: 16px auto; } .admin-panel { padding: 18px; } .admin-top { align-items: flex-start; } }
+diff --git a/assets/css/integracao.css b/assets/css/integracao.css
+index 1cc8893676c3ce3aebaa7465f025e423cb21c028..83e978dab3ff1e8648dd06226c3565653df548a3 100644
+--- a/assets/css/integracao.css
++++ b/assets/css/integracao.css
+@@ -170,6 +170,7 @@
+ .api-professional-header { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+ .api-professional-header h3 { margin: 0 0 4px; color: #174f58; font-size: 21px; }
+ .api-professional-avatar {
++    overflow: hidden;
+     width: 70px;
+     height: 70px;
+     flex: 0 0 70px;
+@@ -180,6 +181,7 @@
+     color: white;
+     font: 800 22px/1 "Nunito", sans-serif;
+ }
++.api-professional-avatar img, .auth-user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+ .api-professional-body { flex: 1; }
+ .api-professional-meta { margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; list-style: none; }
+ .api-professional-meta li { padding: 6px 10px; border-radius: 999px; background: #eef8f4; color: #2f6d65; font-size: 12px; font-weight: 700; }
+diff --git a/assets/css/navbar.css b/assets/css/navbar.css
+index 630f2740714229412b5b02426846ad3b759258f4..3928550d378a2053b291b9c375b80b0ef1a95647 100644
+--- a/assets/css/navbar.css
++++ b/assets/css/navbar.css
+@@ -151,3 +151,5 @@
+ .auth-user-control:focus-visible, .auth-logout-icon:focus-visible {
+     outline: 3px solid rgba(53,160,115,0.25); outline-offset: 4px;
+ }
++.auth-user-avatar { overflow: hidden; }
++.auth-user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+diff --git a/assets/css/profissionais.css b/assets/css/profissionais.css
+index d8c23ec936db8dfab9983e4b5042d56f55b8bccb..abeefa5de83c865c8a3567537fdddb73a4881770 100644
+--- a/assets/css/profissionais.css
++++ b/assets/css/profissionais.css
+@@ -323,6 +323,18 @@
+     line-height: 1.65;
+ }
+ 
++.btn-ver-perfil,
++.btn-ver-perfil:hover,
++.btn-ver-perfil:focus,
++.btn-ver-perfil:active {
++    text-decoration: none;
++}
++
++.btn-ver-perfil:focus-visible {
++    outline: 3px solid #226b64;
++    outline-offset: 4px;
++}
++
+ .btn-ver-perfil {
+     margin-top: 13px;
+     padding: 0;
+@@ -611,4 +623,4 @@
+     .tagg-perfil-profissional p {
+         font-size: 11px;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/assets/js/admin-api.js b/assets/js/admin-api.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..7ebce4d7f2a052f5db019e170b8c542cdf6cc77a
+--- /dev/null
++++ b/assets/js/admin-api.js
+@@ -0,0 +1,17 @@
++(function () {
++    async function request(path, options = {}) {
++        const response = await EspectroCareAuth.authorizedFetch(path, { cache: "no-store", ...options });
++        if (response.status === 401) {
++            EspectroCareAuth.clearSession();
++            throw new Error("Sua sessão expirou. Entre novamente.");
++        }
++        if (response.status === 403) throw new Error("Você não tem permissão para esta ação.");
++        if (!response.ok) {
++            let message;
++            try { message = (await response.json()).mensagem; } catch {}
++            throw new Error(message || "Não foi possível concluir a operação. Tente novamente.");
++        }
++        return response.status === 204 ? null : response.json();
++    }
++    window.EspectroCareAdminAPI = Object.freeze({ request });
++})();
+diff --git a/assets/js/admin.js b/assets/js/admin.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e777dd8eead35b9c3f6b4e435dead158a23dc5c0
+--- /dev/null
++++ b/assets/js/admin.js
+@@ -0,0 +1,55 @@
++document.addEventListener("DOMContentLoaded", async () => {
++    const status = document.getElementById("adminStatus");
++    const request = EspectroCareAdminAPI.request;
++    document.getElementById("sairAdmin").addEventListener("click", () => EspectroCareAuth.logout());
++    const user = await EspectroCareAuth.requireAuth().catch(() => null);
++    if (!user || user.tipoPerfil !== "ADMIN") { status.textContent = "Acesso permitido somente a administradores."; return; }
++    document.getElementById("adminConteudo").hidden = false;
++    let loadRevision = 0;
++    async function load() {
++        const revision = ++loadRevision;
++        const list = document.getElementById("listaConvites");
++        const invitations = await request("/api/admin/convites");
++        if (revision !== loadRevision) return;
++        list.replaceChildren();
++        if (!invitations.length) { list.textContent = "Nenhum convite emitido."; return; }
++        for (const invitation of invitations) {
++            const row = document.createElement("div"); row.className = "admin-row";
++            const state = invitation.utilizadoEm ? "Utilizado" : invitation.revogadoEm ? "Revogado"
++                : new Date(invitation.expiraEm) <= new Date() ? "Expirado" : "Disponível";
++            const text = document.createElement("p");
++            text.textContent = `#${invitation.id} — ${invitation.email} — ${state}. Validade: ${new Date(invitation.expiraEm).toLocaleString("pt-BR")}`;
++            row.append(text);
++            if (state === "Disponível") {
++                const button = document.createElement("button"); button.type = "button"; button.textContent = "Revogar";
++                button.addEventListener("click", async () => {
++                    if (!confirm("Revogar este convite? O link deixará de funcionar.")) return;
++                    button.disabled = true;
++                    try { await request(`/api/admin/convites/${invitation.id}`, { method: "DELETE" }); await load(); status.textContent = "Convite revogado."; }
++                    catch (error) { status.textContent = error.message; button.disabled = false; }
++                });
++                row.append(button);
++            }
++            list.append(row);
++        }
++    }
++    document.getElementById("gerarConvite").addEventListener("submit", async event => {
++        event.preventDefault();
++        const button = event.target.querySelector("button"); button.disabled = true;
++        try {
++            const result = await request("/api/admin/convites", { method: "POST",
++                body: JSON.stringify({ email: document.getElementById("email").value.trim() }) });
++            document.getElementById("linkConvite").value = result.link;
++            document.getElementById("novoConvite").hidden = false;
++            status.textContent = "Convite gerado. Copie e compartilhe o link com a pessoa autorizada."; await load();
++        } catch (error) { status.textContent = error.message; }
++        finally { button.disabled = false; }
++    });
++    document.getElementById("copiarConvite").addEventListener("click", async () => {
++        const input = document.getElementById("linkConvite");
++        try { await navigator.clipboard.writeText(input.value); status.textContent = "Link copiado."; }
++        catch { input.select(); status.textContent = "Selecione o link e copie manualmente."; }
++    });
++    try { await load(); status.textContent = "Gerencie os convites e acesse a Aprendizagem para editar postagens."; }
++    catch (error) { status.textContent = error.message; }
++});
+diff --git a/assets/js/aprendizagem-admin.js b/assets/js/aprendizagem-admin.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0fdb297d7949537ed27b372d48dd75fe0830ef78
+--- /dev/null
++++ b/assets/js/aprendizagem-admin.js
+@@ -0,0 +1,64 @@
++(function () {
++    let admin = false;
++    let reload;
++    let editingId = null;
++    const request = (...args) => EspectroCareAdminAPI.request(...args);
++    function status(message) {
++        const element = document.getElementById("adminAprendizagemStatus");
++        element.textContent = message; element.hidden = !message;
++    }
++    async function open(id = null) {
++        editingId = id;
++        const form = document.getElementById("formPostagem"); form.reset();
++        document.getElementById("editorStatus").textContent = "";
++        document.getElementById("editorTitulo").textContent = id ? "Editar postagem" : "Criar postagem";
++        try {
++            if (id) {
++                const article = await request(`/api/aprendizagem/${id}`);
++                document.getElementById("postagemTitulo").value = article.titulo;
++                document.getElementById("postagemConteudo").value = article.conteudoHtml;
++            }
++            document.getElementById("editorPostagem").showModal();
++        } catch (error) { status(error.message); }
++    }
++    async function init(refresh) {
++        reload = refresh;
++        const user = await EspectroCareAuth.getCurrentUser().catch(() => null);
++        admin = user?.tipoPerfil === "ADMIN";
++        if (!admin) return;
++        document.getElementById("adminAprendizagem").hidden = false;
++        const dialog = document.getElementById("editorPostagem");
++        document.getElementById("novaPostagem").addEventListener("click", () => open());
++        document.getElementById("cancelarPostagem").addEventListener("click", () => dialog.close());
++        document.getElementById("formPostagem").addEventListener("submit", async event => {
++            event.preventDefault();
++            const button = event.target.querySelector('[type="submit"]'); button.disabled = true;
++            try {
++                await request(editingId ? `/api/aprendizagem/${editingId}` : "/api/aprendizagem", {
++                    method: editingId ? "PUT" : "POST", body: JSON.stringify({
++                        titulo: document.getElementById("postagemTitulo").value.trim(),
++                        conteudoHtml: document.getElementById("postagemConteudo").value
++                    })
++                });
++                dialog.close(); status("Postagem salva com sucesso."); await reload();
++            } catch (error) { document.getElementById("editorStatus").textContent = error.message; status(error.message); }
++            finally { button.disabled = false; }
++        });
++    }
++    function controls(card, article) {
++        if (!admin) return;
++        const actions = document.createElement("div"); actions.className = "admin-actions";
++        const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Editar";
++        edit.setAttribute("aria-label", `Editar ${article.titulo}`); edit.addEventListener("click", () => open(article.id));
++        const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Excluir";
++        remove.className = "admin-delete"; remove.setAttribute("aria-label", `Excluir ${article.titulo}`);
++        remove.addEventListener("click", async () => {
++            if (!confirm(`Excluir a postagem “${article.titulo}”? Esta ação remove também os vínculos com os anexos.`)) return;
++            remove.disabled = true;
++            try { await request(`/api/aprendizagem/${article.id}`, { method: "DELETE" }); status("Postagem excluída."); await reload(); }
++            catch (error) { status(error.message); remove.disabled = false; }
++        });
++        actions.append(edit, remove); card.querySelector(".api-learning-content").append(actions);
++    }
++    window.EspectroCareLearningAdmin = Object.freeze({ init, controls });
++})();
+diff --git a/assets/js/aprendizagem.js b/assets/js/aprendizagem.js
+index f677c55f26e4624f1695b92f7c35c8a8d039de27..d1dbda70bc1b8ea8f67e8b38bb53605d0077c184 100644
+--- a/assets/js/aprendizagem.js
++++ b/assets/js/aprendizagem.js
+@@ -44,11 +44,19 @@ document.addEventListener("DOMContentLoaded", async () => {
+                     <a class="api-learning-link" data-auth-action href="aprendizagemdoc1.html?id=${encodeURIComponent(article.id)}">Saiba mais <span aria-hidden="true">→</span></a>
+                 </div>
+             `;
++            EspectroCareLearningAdmin?.controls(card, article);
+             EspectroCareActionGate.prepare(card);
+             container.appendChild(card);
+         });
+     }
+ 
++    await EspectroCareLearningAdmin?.init(async () => {
++        const response = await fetch(`${EspectroCareConfig.API_BASE_URL}/api/aprendizagem`, { cache: "no-store" });
++        if (!response.ok) throw new Error("Não foi possível atualizar a listagem.");
++        artigos = await response.json();
++        render(artigos);
++    });
++
+     try {
+         status.textContent = "Carregando conteúdos...";
+         status.hidden = false;
+diff --git a/assets/js/area-usuario.js b/assets/js/area-usuario.js
+index 8ac46a3e9e98de70ae8482d3d1cde54ab133166d..ae89c482942aebdcba810c0113c7e0c05fd069d8 100644
+--- a/assets/js/area-usuario.js
++++ b/assets/js/area-usuario.js
+@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
+             ? await window.EspectroCareAuthGuard
+             : await EspectroCareAuth.requireAuth();
+         if (!user) return;
++        if (user.tipoPerfil === "ADMIN") { window.location.replace("admin.html"); return; }
+ 
+         const profilePath = user.tipoPerfil === "PROFISSIONAL" ? "/api/perfil" : "/api/perfil-responsavel";
+         const response = await EspectroCareAuth.authorizedFetch(profilePath);
+diff --git a/assets/js/auth-ui.js b/assets/js/auth-ui.js
+index 8e7c2515f7101751c84995ffb0120782d6839efe..fb5227816945c8454d7f5a4465bed26dc701b293 100644
+--- a/assets/js/auth-ui.js
++++ b/assets/js/auth-ui.js
+@@ -27,7 +27,7 @@
+     }
+ 
+     function profileLabel(tipoPerfil) {
+-        return tipoPerfil === "PROFISSIONAL" ? "Profissional" : "Responsável";
++        return tipoPerfil === "ADMIN" ? "Administrador" : tipoPerfil === "PROFISSIONAL" ? "Profissional" : "Responsável";
+     }
+ 
+     function applyVisibility(loggedIn) {
+@@ -55,7 +55,7 @@
+ 
+             const area = document.createElement("a");
+             area.className = "auth-user-control";
+-            area.href = makeAreaHref();
++            area.href = user.tipoPerfil === "ADMIN" ? makePageHref("admin.html") : makeAreaHref();
+             area.setAttribute("aria-label", "Abrir minha área");
+ 
+             const avatar = document.createElement("span");
+@@ -83,11 +83,22 @@
+             });
+ 
+             conta.append(area, sair);
++            const updateAvatar = photo => window.EspectroCarePhoto?.render(avatar, photo, user.nome);
++            let photoChanged = false;
++            window.addEventListener("espectrocare:foto-atualizada", event => {
++                photoChanged = true; updateAvatar(event.detail.fotoPerfil);
++            });
++            if (user.tipoPerfil !== "ADMIN") {
++                EspectroCareAuth.authorizedFetch("/api/conta/foto", { cache: "no-store" })
++                    .then(response => response.ok ? response.json() : null)
++                    .then(data => { if (!photoChanged) updateAvatar(data?.fotoPerfil); })
++                    .catch(() => { if (!photoChanged) updateAvatar(null); });
++            }
+         }
+ 
+         const entrarMobile = document.querySelector(".entrar-nav-mobile");
+         if (entrarMobile) {
+-            entrarMobile.innerHTML = `<a href="${makeAreaHref()}">Minha área</a>`;
++            entrarMobile.innerHTML = `<a href="${user.tipoPerfil === "ADMIN" ? makePageHref("admin.html") : makeAreaHref()}">Minha área</a>`;
+             entrarMobile.hidden = false;
+         }
+ 
+diff --git a/assets/js/auth.js b/assets/js/auth.js
+index f4acad42065b98763aff4938963c9c4cc47becf4..deb69d670ade1a6b79017a99a55afd01897f00fa 100644
+--- a/assets/js/auth.js
++++ b/assets/js/auth.js
+@@ -34,6 +34,7 @@
+     }
+ 
+     function profilePage(tipoPerfil) {
++        if (tipoPerfil === "ADMIN") return "admin.html";
+         if (tipoPerfil === "PROFISSIONAL") return "userProfissional.html";
+         if (tipoPerfil === "RESPONSAVEL") return "userResponsavel.html";
+         return "login.html";
+diff --git a/assets/js/cadastro-admin.js b/assets/js/cadastro-admin.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..17cfa1a2767cbd29613ce18dee66f5272afe8d38
+--- /dev/null
++++ b/assets/js/cadastro-admin.js
+@@ -0,0 +1,41 @@
++document.addEventListener("DOMContentLoaded", async () => {
++    const status = document.getElementById("adminStatus");
++    const form = document.getElementById("cadastroAdmin");
++    // Mantém o token apenas na memória desta página e remove-o da barra/histórico.
++    const token = new URLSearchParams(location.hash.slice(1)).get("token");
++    history.replaceState(null, "", location.pathname);
++    async function send(path, body) {
++        const response = await fetch(`${EspectroCareConfig.API_BASE_URL}${path}`, {
++            method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
++            body: JSON.stringify(body)
++        });
++        const data = await response.json();
++        if (!response.ok) throw new Error(data.mensagem || "Dados inválidos. Verifique os campos e os requisitos de senha.");
++        return data;
++    }
++    if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
++        status.textContent = "Convite inválido, expirado, revogado ou já utilizado. Solicite um novo convite.";
++        return;
++    }
++    try {
++        const invitation = await send("/cadastro/admin/convite/validar", { token });
++        document.getElementById("email").value = invitation.email;
++        form.hidden = false;
++        status.textContent = "Convite validado. Preencha seus dados para concluir.";
++    } catch (error) { status.textContent = error.message || "Não foi possível validar o convite."; return; }
++    form.addEventListener("submit", async event => {
++        event.preventDefault();
++        const senha = document.getElementById("senha").value;
++        if (!EspectroCareForms.isStrongPassword(senha) || new TextEncoder().encode(senha).length > 72) {
++            status.textContent = "A senha deve atender aos requisitos informados."; return;
++        }
++        if (!form.reportValidity()) return;
++        const button = form.querySelector("button"); button.disabled = true;
++        try {
++            const result = await send("/cadastro/admin", { token, nome: document.getElementById("nome").value.trim(),
++                email: document.getElementById("email").value, senha });
++            form.reset(); form.hidden = true; status.textContent = result.mensagem;
++        } catch (error) { status.textContent = error.message || "Não foi possível concluir o cadastro."; }
++        finally { button.disabled = false; }
++    });
++});
+diff --git a/assets/js/foto-perfil.js b/assets/js/foto-perfil.js
+index 30d6746e24c092d65a671238bb3864650a7d407a..8ce31a24ec4a04a1b36f959c5c68e3026fde0a62 100644
+--- a/assets/js/foto-perfil.js
++++ b/assets/js/foto-perfil.js
+@@ -6,10 +6,14 @@
+ 
+     function render(element, photo, name) {
+         element.replaceChildren();
+-        if (typeof photo === "string" && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(photo)) {
++        if (typeof photo === "string" && (/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(photo)
++                || /^\/api\/profissionais\/\d+\/foto$/.test(photo))) {
+             const img = document.createElement("img");
+-            img.src = photo;
+-            img.alt = "Sua foto de perfil";
++            img.src = photo.startsWith("/") ? `${EspectroCareConfig.API_BASE_URL}${photo}` : photo;
++            img.alt = `Foto de ${name || "perfil"}`;
++            img.addEventListener("error", () => {
++                if (img.parentNode === element) element.textContent = initials(name);
++            }, { once: true });
+             element.appendChild(img);
+         } else element.textContent = initials(name);
+     }
+@@ -94,7 +98,9 @@
+                         ? "A imagem não foi aceita. Escolha outra foto."
+                         : "Não foi possível salvar sua foto. Tente novamente.");
+                 }
+-                render(button, (await response.json()).fotoPerfil, user.nome);
++                const savedPhoto = (await response.json()).fotoPerfil;
++                render(button, savedPhoto, user.nome);
++                window.dispatchEvent(new CustomEvent("espectrocare:foto-atualizada", { detail: { fotoPerfil: savedPhoto } }));
+                 show("Foto de perfil atualizada com sucesso.", "success");
+             } catch (error) {
+                 show(error.message || "Não foi possível salvar sua foto. Tente novamente.", "error");
+diff --git a/assets/js/loginEntrar.js b/assets/js/loginEntrar.js
+index 329455eba717f805b7ed58f87794453dad3ab1eb..b63ac42895e1fbb2e14f2020a488f791eea80eca 100644
+--- a/assets/js/loginEntrar.js
++++ b/assets/js/loginEntrar.js
+@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
+             if (redirect) {
+                 window.location.href = redirect;
+             } else {
+-                window.location.href = EspectroCareAuth.accountAreaPage();
++                window.location.href = currentUser.tipoPerfil === "ADMIN" ? "admin.html" : EspectroCareAuth.accountAreaPage();
+             }
+         } catch (error) {
+             EspectroCareAuth.clearSession();
+diff --git a/assets/js/mobilen-navbar.js b/assets/js/mobilen-navbar.js
+index df203904c5fa0b9d853bb34d3700439fdc33d998..7d869d324f5caed91c4fc723acd3e123ed290a38 100644
+--- a/assets/js/mobilen-navbar.js
++++ b/assets/js/mobilen-navbar.js
+@@ -49,6 +49,7 @@
+             if (document.body?.dataset.authRequired === "true") {
+                 await loadSibling("auth-guard.js");
+             }
++            if (!window.EspectroCarePhoto) await loadSibling("foto-perfil.js");
+             if (!window.EspectroCareAuthUI) await loadSibling("auth-ui.js");
+             window.EspectroCareAuthUI?.init();
+         } catch (error) {
+diff --git a/assets/js/perfil-profissionais.js b/assets/js/perfil-profissionais.js
+index 0cc4fad94091c2a7e875175130bb65c070f5999c..df4d010d6ddd927c9441b438ad59c758259ce614 100644
+--- a/assets/js/perfil-profissionais.js
++++ b/assets/js/perfil-profissionais.js
+@@ -61,6 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
+                 <a class="api-back-link" href="profissionais.html">Voltar para profissionais</a>
+             </div>
+         `;
++        EspectroCarePhoto.render(profileCard.querySelector(".api-professional-avatar"), profissional.fotoPerfilUrl, profissional.nome);
+         status.hidden = true;
+     } catch (error) {
+         status.textContent = "Não foi possível carregar este perfil. Tente novamente.";
+diff --git a/assets/js/profissionais.js b/assets/js/profissionais.js
+index 5ba46b19a6c67bbbb57a0b9a6cf6e6f81886fd24..c2cea35cb2c139e44c707914ca52a2362a2fef3d 100644
+--- a/assets/js/profissionais.js
++++ b/assets/js/profissionais.js
+@@ -42,8 +42,7 @@ document.addEventListener("DOMContentLoaded", async () => {
+             article.className = "card-profissional api-professional-card";
+ 
+             const location = [profissional.cidade, profissional.estado].filter(Boolean).join(" - ");
+-            const phone = formatPhone(profissional.telefone);
+-            const details = [profissional.formacao, profissional.numRegistro, location].filter(Boolean);
++            const details = [profissional.formacao, location].filter(Boolean);
+ 
+             article.innerHTML = `
+                 <a class="api-professional-header api-professional-entry" data-auth-action href="perfil-profissional.html?id=${encodeURIComponent(profissional.id)}" aria-label="Ver perfil profissional">
+@@ -59,9 +58,9 @@ document.addEventListener("DOMContentLoaded", async () => {
+                 </div>
+                 <div class="api-professional-actions">
+                     <a class="btn-ver-perfil" data-auth-action href="perfil-profissional.html?id=${encodeURIComponent(profissional.id)}">Ver perfil <span aria-hidden="true">→</span></a>
+-                    ${phone ? `<a class="api-phone-link" href="tel:${String(profissional.telefone).replace(/\D/g, "")}">${escapeHtml(phone)}</a>` : ""}
+                 </div>
+             `;
++            EspectroCarePhoto.render(article.querySelector(".api-professional-avatar"), profissional.fotoPerfilUrl, profissional.nome);
+             article.addEventListener("click", event => {
+                 if (!event.target.closest("a, button, input")) {
+                     article.querySelector(".btn-ver-perfil").click();
+@@ -81,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
+     try {
+         status.textContent = "Carregando profissionais...";
+         status.hidden = false;
+-        const response = await fetch(`${EspectroCareConfig.API_BASE_URL}/api/profissionais`);
++        const response = await fetch(`${EspectroCareConfig.API_BASE_URL}/api/profissionais`, { cache: "no-store" });
+         if (!response.ok) throw new Error();
+ 
+         profissionais = await response.json();
+diff --git a/assets/js/vizualizarsenha.js b/assets/js/vizualizarsenha.js
+index 5b50885fce9bda9fa84bdc0bc57ea69732ae3f62..882bfd7e2f42cb9631c1c13719bcf324ad204945 100644
+--- a/assets/js/vizualizarsenha.js
++++ b/assets/js/vizualizarsenha.js
+@@ -2,10 +2,11 @@ let aberto = document.querySelector('#aberto')
+ let fechado = document.querySelector('#fechado')
+ let inputsenha = document.querySelector('#senha')
+ 
+-aberto.addEventListener('click', mostrarSenha)
+-fechado.addEventListener('click', mostrarSenha)
++aberto?.addEventListener('click', mostrarSenha)
++fechado?.addEventListener('click', mostrarSenha)
+ 
+ function mostrarSenha() {
++    if (!inputsenha || !aberto || !fechado) return;
+     if (inputsenha.type === 'password') {
+         inputsenha.type = 'text'
+         aberto.style.display = 'block'
+@@ -24,7 +25,8 @@ const confirmarSenhaProf = document.querySelector('#confirmarSenhaProf');
+ const olhoConfirmarSenha = document.querySelector('#olhoConfirmarSenha');
+ 
+ 
+-olhoSenha.addEventListener('click', () => {
++olhoSenha?.addEventListener('click', () => {
++    if (!senhaProf) return;
+     if (senhaProf.type === 'password') {
+         senhaProf.type = 'text';
+ 
+@@ -39,7 +41,8 @@ olhoSenha.addEventListener('click', () => {
+ });
+ 
+ 
+-olhoConfirmarSenha.addEventListener('click', () => {
++olhoConfirmarSenha?.addEventListener('click', () => {
++    if (!confirmarSenhaProf) return;
+     if (confirmarSenhaProf.type === 'password') {
+         confirmarSenhaProf.type = 'text';
+ 
+diff --git a/pages/admin.html b/pages/admin.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..d06dc22b66df33e8e16fa158a77f5dda27c32a60
+--- /dev/null
++++ b/pages/admin.html
+@@ -0,0 +1,9 @@
++<!DOCTYPE html>
++<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Administração | EspectroCare</title><link rel="stylesheet" href="../assets/css/base.css"><link rel="stylesheet" href="../assets/css/admin.css"></head>
++<body><main class="admin-shell"><div class="admin-top"><a href="aprendizagem.html">← Aprendizagem</a><button id="sairAdmin" type="button">Sair</button></div>
++<h1>Convites administrativos</h1><p id="adminStatus" role="status" aria-live="polite">Validando sua sessão...</p>
++<section id="adminConteudo" class="admin-panel" hidden><h2>Novo convite</h2><p>O convite só poderá ser usado pelo e-mail informado. Compartilhe o link manualmente por um canal seguro.</p>
++<form id="gerarConvite"><label for="email">E-mail autorizado</label><input type="email" id="email" required maxlength="254" autocomplete="off"><button type="submit">Gerar convite</button></form>
++<div id="novoConvite" hidden><label for="linkConvite">Link gerado (exibido somente agora)</label><input id="linkConvite" readonly><button type="button" id="copiarConvite">Copiar link</button></div>
++<h2>Convites emitidos</h2><div id="listaConvites" class="admin-list"></div></section></main>
++<script src="../assets/js/api-config.js"></script><script src="../assets/js/auth.js"></script><script src="../assets/js/admin-api.js"></script><script src="../assets/js/admin.js"></script></body></html>
+diff --git a/pages/aprendizagem.html b/pages/aprendizagem.html
+index 6644d9a5266a8132b566f10e75454e5a81bf382b..b21edd7600298a7b17ed4a545a7d28de3611d7c9 100644
+--- a/pages/aprendizagem.html
++++ b/pages/aprendizagem.html
+@@ -11,6 +11,7 @@
+     <link rel="stylesheet" href="../assets/css/modal.css">
+     <link rel="stylesheet" href="../assets/css/aprendizagem.css">
+     <link rel="stylesheet" href="../assets/css/integracao.css">
++    <link rel="stylesheet" href="../assets/css/admin.css">
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@@ -75,7 +76,21 @@
+         <input type="search" class="search" placeholder="Pesquisar por título ou categoria..." id="searchInput">
+     </section>
+     <p id="aprendizagemStatus" class="api-state" role="status" aria-live="polite">Carregando conteúdos...</p>
++    <div id="adminAprendizagem" class="admin-toolbar" hidden>
++        <button type="button" id="novaPostagem">Criar postagem</button><a href="admin.html">Gerenciar convites</a>
++    </div>
++    <p id="adminAprendizagemStatus" role="status" aria-live="polite" hidden></p>
+     <section class="container-blog" id="containerAprendizagem" aria-label="Artigos publicados"></section>
++    <dialog id="editorPostagem" class="admin-editor" aria-labelledby="editorTitulo">
++        <h2 id="editorTitulo">Criar postagem</h2>
++        <form id="formPostagem">
++            <label for="postagemTitulo">Título</label><input id="postagemTitulo" required maxlength="255">
++            <label for="postagemConteudo">Conteúdo</label><textarea id="postagemConteudo" required maxlength="100000" aria-describedby="postagemAjuda"></textarea>
++            <p id="postagemAjuda">Texto ou HTML simples: parágrafos, títulos, listas, negrito e itálico. Outros elementos são removidos ao salvar. Os anexos e categorias existentes são preservados.</p>
++            <p id="editorStatus" role="status" aria-live="polite"></p>
++            <button type="submit">Salvar postagem</button><button type="button" id="cancelarPostagem">Cancelar</button>
++        </form>
++    </dialog>
+ </main>
+ 
+ <footer class="footer">
+@@ -93,6 +108,8 @@
+ <script src="../assets/js/action-gate.js"></script>
+ <script src="../assets/js/mobilen-navbar.js"></script>
+ <script src="../assets/js/selecionar-perfil.js"></script>
++<script src="../assets/js/admin-api.js"></script>
++<script src="../assets/js/aprendizagem-admin.js"></script>
+ <script src="../assets/js/aprendizagem.js"></script>
+ <div class="overlay" id="overlay"></div>
+ </body>
+diff --git a/pages/cadastro-admin.html b/pages/cadastro-admin.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..63e2b22ecd60a3b26e81a9cacc2c6123d118ce56
+--- /dev/null
++++ b/pages/cadastro-admin.html
+@@ -0,0 +1,12 @@
++<!DOCTYPE html>
++<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Cadastro administrativo | EspectroCare</title><link rel="stylesheet" href="../assets/css/base.css"><link rel="stylesheet" href="../assets/css/admin.css"></head>
++<body><main class="admin-shell admin-narrow"><a href="../index.html"><img class="admin-logo" src="../assets/img/logos/Logo.png" alt="EspectroCare"></a>
++<section class="admin-panel"><h1>Cadastro de administrador</h1><p>Este cadastro exige um convite válido associado ao seu e-mail.</p>
++<p id="adminStatus" role="status" aria-live="polite">Validando convite...</p>
++<form id="cadastroAdmin" hidden>
++<label for="nome">Nome</label><input id="nome" name="nome" required maxlength="120" autocomplete="name">
++<label for="email">E-mail</label><input id="email" name="email" type="email" required maxlength="254" autocomplete="email" readonly>
++<label for="senha">Senha</label><input id="senha" name="senha" type="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="senhaAjuda">
++<p id="senhaAjuda">Use ao menos 8 caracteres, com maiúscula, minúscula, número e símbolo. Máximo de 72 bytes.</p>
++<button type="submit">Cadastrar administrador</button></form><a href="login.html">Entrar</a></section></main>
++<script src="../assets/js/api-config.js"></script><script src="../assets/js/form-utils.js"></script><script src="../assets/js/cadastro-admin.js"></script></body></html>
+diff --git a/pages/perfil-profissional.html b/pages/perfil-profissional.html
+index 35fb8bdc9a4768514df81ace0b697f722519798d..38e5796e9e16ec0f6efefc51f5a3f34696d91315 100644
+--- a/pages/perfil-profissional.html
++++ b/pages/perfil-profissional.html
+@@ -83,6 +83,7 @@
+ </footer>
+ <script src="../assets/js/api-config.js"></script>
+ <script src="../assets/js/auth.js"></script>
++<script src="../assets/js/foto-perfil.js"></script>
+ <script src="../assets/js/form-utils.js"></script>
+ <script src="../assets/js/mobilen-navbar.js"></script>
+ <script src="../assets/js/selecionar-perfil.js"></script>
+diff --git a/pages/profissionais.html b/pages/profissionais.html
+index 11798e82f2d6705a9f0cc61dcfe5d23c5d213abb..16429e9bd47b0cf1e58484f8bb26bc83499a4bb2 100644
+--- a/pages/profissionais.html
++++ b/pages/profissionais.html
+@@ -103,6 +103,7 @@
+ </footer>
+ <script src="../assets/js/api-config.js"></script>
+ <script src="../assets/js/auth.js"></script>
++<script src="../assets/js/foto-perfil.js"></script>
+ <script src="../assets/js/action-gate.js"></script>
+ <script src="../assets/js/form-utils.js"></script>
+ <script src="../assets/js/mobilen-navbar.js"></script>
+diff --git a/tests/README.md b/tests/README.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..365971b8333539119eb4a523d14f67251d6272d2
+--- /dev/null
++++ b/tests/README.md
+@@ -0,0 +1,13 @@
++# Teste integrado do site
++
++Use somente banco/API **locais e exclusivos de teste**. O teste recusa URLs de produção. Os dados usam o domínio reservado `teste.invalid`. Só são excluídas postagens criadas pelo próprio teste; contas/convites de teste podem permanecer nessa base descartável.
++
++1. Inicie a API em `http://127.0.0.1:8088`, usando H2 persistente exclusivo de teste, JWT fictício, `FRONTEND_URL=http://127.0.0.1:5500` e `CORS_ALLOWED_ORIGINS=http://127.0.0.1:5500`. Nunca reutilize credenciais ou o banco real.
++2. Antes de iniciar a API, gere o primeiro convite com `ADMIN_INVITE_EMAIL=admin-e2e@teste.invalid` e `ADMIN_INVITE_OUTPUT` apontando para um arquivo privado novo, pelo procedimento do backend. O teste cadastra essa conta com senha exclusiva de teste `Senha@123`. Se a conta já existir nessa base, fará login diretamente.
++3. Sirva a raiz do frontend na porta 5500 (`python -m http.server 5500 --bind 127.0.0.1`).
++4. Na pasta `tests`, execute `npm install` e `npx playwright install chromium`.
++5. Defina `TEST_INVITE_FILE` com o caminho do arquivo privado, `TEST_OUTPUT_DIR` com uma pasta de resultados fora do site e execute `npm test`. Opcionalmente defina `TEST_BROWSER_PATH` com o executável de um Chromium/Edge instalado; nesse caso o download do Chromium não é necessário.
++
++O teste verifica cadastro pelo convite, remoção do token do histórico, login, geração/revogação, CRUD de postagens com confirmação, fotos de ambos os perfis, persistência após recarga/novo login, apresentação dos números, foco e ausência de sublinhado, controles por perfil e largura de 375/1280 px. Gera capturas e `relatorio.json`, sem registrar senhas ou tokens. O arquivo privado não deve ser incluído em ZIP, commit ou logs. Cenários de expiração, reutilização e concorrência são cobertos pelos testes do backend.
++
++Para repetir em uma base realmente limpa, crie **outro banco de teste**; não limpe tabelas reais. O teste usa IDs para identificar os novos registros, permitindo execução repetida nessa base local.
+diff --git a/tests/e2e.cjs b/tests/e2e.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..1beb897ffb0d83d28666fbeb454047b4b93fd724
+--- /dev/null
++++ b/tests/e2e.cjs
+@@ -0,0 +1,134 @@
++// Pré-requisitos: API exclusiva de testes e site local; nunca executar contra produção.
++const { chromium } = require('playwright');
++const fs = require('node:fs');
++const path = require('node:path');
++const assert = require('node:assert/strict');
++
++const api = process.env.TEST_API_URL || 'http://127.0.0.1:8088';
++const site = process.env.TEST_SITE_URL || 'http://127.0.0.1:5500';
++for (const url of [api, site]) assert(['127.0.0.1', 'localhost'].includes(new URL(url).hostname), 'Use somente servidores locais de testes.');
++const adminEmail = 'admin-e2e@teste.invalid';
++const password = 'Senha@123';
++const suffix = Date.now().toString();
++const output = process.env.TEST_OUTPUT_DIR || path.join(__dirname, 'resultados');
++fs.mkdirSync(output, { recursive: true });
++const checks = [];
++const check = name => { checks.push(name); console.log('OK:', name); };
++async function request(route, method = 'GET', body, token) {
++    const response = await fetch(api + route, { method, headers: {
++        ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {})
++    }, body: body ? JSON.stringify(body) : undefined });
++    let data; try { data = await response.json(); } catch {}
++    return { status: response.status, data };
++}
++async function session(browser, user) {
++    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
++    context.setDefaultTimeout(60000);
++    await context.addInitScript(({ api, user }) => {
++        localStorage.setItem('espectrocare_api_base_url', api);
++        if (user) { localStorage.setItem('token', user.token); localStorage.setItem('email', user.email); }
++    }, { api, user });
++    return { context, page: await context.newPage() };
++}
++async function responsive(page, route, name) {
++    for (const width of [1280, 375]) {
++        await page.setViewportSize({ width, height: 900 }); await page.goto(site + route);
++        await page.waitForTimeout(500);
++        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: overflow em ${width}px`);
++        await page.screenshot({ path: path.join(output, `${name}-${width}.png`), fullPage: true });
++    }
++}
++(async () => {
++    let login = await request('/auth/login', 'POST', { email: adminEmail, senha: password });
++    if (login.status !== 200) {
++        assert(process.env.TEST_INVITE_FILE, 'Defina TEST_INVITE_FILE com o arquivo privado do primeiro convite de testes.');
++        const link = fs.readFileSync(process.env.TEST_INVITE_FILE, 'utf8').trim();
++        const browser = await chromium.launch({ headless: true, ...(process.env.TEST_BROWSER_PATH ? { executablePath: process.env.TEST_BROWSER_PATH } : {}) });
++        try {
++            const { page } = await session(browser);
++            // Substitui apenas a origem; o fragmento original permanece no link local.
++            await page.goto(site + new URL(link).pathname + new URL(link).hash);
++            await page.locator('#cadastroAdmin').waitFor({ state: 'visible' });
++            assert.equal(await page.locator('#email').inputValue(), adminEmail);
++            assert.equal(new URL(page.url()).hash, '');
++            await page.locator('#nome').fill('Administrador de teste'); await page.locator('#senha').fill(password);
++            await page.locator('#cadastroAdmin button').click();
++            await page.getByText('Administrador cadastrado com sucesso.', { exact: false }).waitFor();
++            check('Cadastro administrativo pela página de convite; token removido do histórico');
++        } finally { await browser.close(); }
++        login = await request('/auth/login', 'POST', { email: adminEmail, senha: password });
++    }
++    assert.equal(login.status, 200); const adminToken = login.data.token;
++    const browser = await chromium.launch({ headless: true, ...(process.env.TEST_BROWSER_PATH ? { executablePath: process.env.TEST_BROWSER_PATH } : {}) });
++    try {
++        const { page: admin } = await session(browser);
++        await admin.goto(site + '/pages/login.html'); await admin.locator('#email').fill(adminEmail); await admin.locator('#senha').fill(password);
++        await admin.locator('#btnLogar').click(); await admin.waitForURL('**/admin.html', { waitUntil: 'domcontentloaded' });
++        await admin.locator('#adminConteudo').waitFor({ state: 'visible' }); check('Login administrativo e painel de convites');
++        await admin.locator('#email').fill(`convidado-${suffix}@teste.invalid`); await admin.locator('#gerarConvite button').click();
++        await admin.locator('#novoConvite').waitFor({ state: 'visible' });
++        const link = await admin.locator('#linkConvite').inputValue(); assert(new URL(link).hash.startsWith('#token='));
++        const row = admin.locator('.admin-row').filter({ hasText: `convidado-${suffix}@teste.invalid` });
++        admin.once('dialog', dialog => dialog.accept()); await row.getByRole('button', { name: 'Revogar' }).click();
++        await row.getByText('Revogado', { exact: false }).waitFor();
++        const inviteToken = new URLSearchParams(new URL(link).hash.slice(1)).get('token');
++        assert.equal((await request('/cadastro/admin/convite/validar', 'POST', { token: inviteToken })).status, 400);
++        check('Emissão de convite, link copiável e revogação pela interface');
++
++        await admin.goto(site + '/pages/aprendizagem.html'); await admin.locator('#novaPostagem').waitFor({ state: 'visible' });
++        await admin.locator('#novaPostagem').click(); await admin.locator('#postagemTitulo').fill(`Artigo E2E ${suffix}`);
++        await admin.locator('#postagemConteudo').fill('<p>Conteúdo persistente de teste</p>'); await admin.locator('#formPostagem [type=submit]').click();
++        const card = admin.locator('.api-learning-card').filter({ hasText: `Artigo E2E ${suffix}` }); await card.waitFor();
++        await card.getByRole('button', { name: 'Editar', exact: false }).click(); await admin.locator('#postagemTitulo').fill(`Artigo editado ${suffix}`);
++        await admin.locator('#formPostagem [type=submit]').click();
++        const edited = admin.locator('.api-learning-card').filter({ hasText: `Artigo editado ${suffix}` }); await edited.waitFor();
++        admin.once('dialog', dialog => dialog.dismiss()); await edited.getByRole('button', { name: 'Excluir', exact: false }).click();
++        assert.equal(await edited.count(), 1);
++        admin.once('dialog', dialog => dialog.accept()); await edited.getByRole('button', { name: 'Excluir', exact: false }).click();
++        await edited.waitFor({ state: 'detached' }); check('Criação, edição, confirmação cancelada e exclusão de postagem');
++
++        for (const role of ['responsavel', 'profissional']) {
++            const email = `${role}-${suffix}@teste.invalid`;
++            assert.equal((await request('/cadastro/' + role, 'POST', { nome: `Teste ${role}`, email, senha: password,
++                ...(role === 'profissional' ? { cpf: suffix.slice(-11), telefone: '11987654321', numRegistro: 'REG-E2E', formacao: 'Psicologia' } : {}) })).status, 200);
++            const user = (await request('/auth/login', 'POST', { email, senha: password })).data;
++            const { page } = await session(browser, user);
++            await page.goto(site + '/pages/area-usuario.html'); await page.locator('#areaUsuarioConteudo').waitFor({ state: 'visible' });
++            await page.locator('input[type=file]').setInputFiles(path.join(__dirname, 'foto-teste.png'));
++            await page.getByText('Foto de perfil atualizada com sucesso.').waitFor();
++            await page.locator('.auth-user-avatar img').waitFor();
++            await page.reload(); await page.locator('.auth-user-avatar img').waitFor();
++            await page.goto(site + '/index.html'); await page.locator('.auth-user-avatar img').waitFor();
++            assert.equal((await request('/api/aprendizagem', 'POST', { titulo: 'Proibido', conteudoHtml: '<p>x</p>' }, user.token)).status, 403);
++            await page.goto(site + '/pages/aprendizagem.html'); assert.equal(await page.locator('#adminAprendizagem').isVisible(), false);
++            const newLogin = (await request('/auth/login', 'POST', { email, senha: password })).data;
++            assert((await request('/api/conta/foto', 'GET', undefined, newLogin.token)).data.fotoPerfil.startsWith('data:image/jpeg'));
++            check(`Foto de ${role} persistente, ícone atualizado, novo login e acesso administrativo negado`);
++            if (role === 'profissional') {
++                const me = (await request('/api/auth/me', 'GET', undefined, user.token)).data;
++                await page.goto(site + '/pages/profissionais.html');
++                const card = page.locator(`.api-professional-card:has(a[href="perfil-profissional.html?id=${me.id}"])`); await card.waitFor();
++                await card.locator('.api-professional-avatar img').waitFor();
++                assert(!(await card.innerText()).includes('REG-E2E')); assert(!(await card.innerText()).includes('98765'));
++                const button = card.locator('.btn-ver-perfil');
++                for (const state of ['normal', 'hover', 'focus']) {
++                    if (state === 'hover') await button.hover(); if (state === 'focus') await button.focus();
++                    assert.equal(await button.evaluate(el => getComputedStyle(el).textDecorationLine), 'none');
++                }
++                assert.equal(await button.evaluate(el => getComputedStyle(el).outlineStyle), 'solid');
++                await page.goto(site + `/pages/perfil-profissional.html?id=${me.id}`); await page.locator('.api-profile-avatar img').waitFor();
++                assert((await page.locator('#profileCard').innerText()).includes('REG-E2E'));
++                assert((await page.locator('#profileCard').innerText()).includes('98765'));
++                await page.goto(site + '/pages/userProfissional.html'); await page.locator('#fotoPerfilAvatar img').waitFor();
++                check('Foto no card, perfil e gestão; números somente no perfil; Ver perfil sem sublinhado e com foco');
++                await responsive(page, '/pages/profissionais.html', 'profissionais');
++                await responsive(page, `/pages/perfil-profissional.html?id=${me.id}`, 'perfil-profissional');
++            }
++        }
++        await responsive(admin, '/pages/admin.html', 'convites'); await responsive(admin, '/pages/aprendizagem.html', 'aprendizagem');
++        await admin.goto(site + '/pages/cadastro-admin.html#token=invalido');
++        await admin.getByText('Convite inválido', { exact: false }).waitFor(); assert.equal(await admin.locator('#cadastroAdmin').isVisible(), false);
++        await responsive(admin, '/pages/cadastro-admin.html', 'cadastro-admin'); check('Convite inválido e responsividade em 375/1280 px');
++        fs.writeFileSync(path.join(output, 'relatorio.json'), JSON.stringify({ checks, status: 'aprovado' }, null, 2));
++    } finally { await browser.close(); }
++})().catch(error => { console.error(error.message); process.exitCode = 1; });
+diff --git a/tests/foto-teste.png b/tests/foto-teste.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..090b92b1522c2ada1dfd49c6af80853421549cab
+GIT binary patch
+literal 160
+zcmeAS@N?(olHy`uVBq!ia0vp^1|ZDA1SD@H<Xr$#>7Fi*Ar*7Zo^xbmP!MP^P-(yD
+tlU(#a++kWm_I>BhBOX1Jqy5a6nGdXGjQW{mF$ZWRgQu&X%Q~loCID&UKY#!L
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/package.json b/tests/package.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc844401af0b0a2f05d961b8c0341ee87cd43d8e
+--- /dev/null
++++ b/tests/package.json
+@@ -0,0 +1 @@
++{"private":true,"scripts":{"test":"node e2e.cjs"},"devDependencies":{"playwright":"1.62.1"}}

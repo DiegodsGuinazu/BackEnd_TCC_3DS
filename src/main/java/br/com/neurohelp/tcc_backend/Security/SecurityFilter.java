@@ -1,6 +1,7 @@
 package br.com.neurohelp.tcc_backend.Security;
 
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
+import br.com.neurohelp.tcc_backend.Repository.AdminRepository;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
@@ -28,6 +29,8 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     @Autowired
     private responsavelRepository responsavelRepository;
+
+    @Autowired private AdminRepository admins;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -66,6 +69,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         String email = token.getSubject();
         if (email == null || email.isBlank()) return null;
         String tipoPerfil = token.getClaim("tipoPerfil").asString();
+        if ("ADMIN".equals(tipoPerfil)) return admins.findByEmailIgnoreCase(email).orElse(null);
         if ("PROFISSIONAL".equals(tipoPerfil)) return profissionalRepository.findByEmail(email).orElse(null);
         if ("RESPONSAVEL".equals(tipoPerfil)) return responsavelRepository.findByEmail(email).orElse(null);
         if (!token.getClaim("tipoPerfil").isMissing()) return null;

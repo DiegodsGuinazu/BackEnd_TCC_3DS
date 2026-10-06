@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+data
+node_modules
+integracao
+.env
+.env.*
+*.db
