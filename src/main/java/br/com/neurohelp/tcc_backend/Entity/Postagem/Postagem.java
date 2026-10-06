@@ -43,6 +43,6 @@ public class Postagem {
             joinColumns = @JoinColumn(name = "postagem_id"),
             inverseJoinColumns = @JoinColumn(name = "categoria_id")
     )
-    private Set<Categoria> categorias;
+    private Set<Categoria> categorias = new java.util.HashSet<>();
 
 }

@@ -34,6 +34,7 @@ public class FotoPerfilService {
                     reader.setInput(input, true, true);
                     String format = reader.getFormatName();
                     if (!(format.equalsIgnoreCase("JPEG") || format.equalsIgnoreCase("PNG"))) throw invalida();
+                    if (format.equalsIgnoreCase("JPEG") != dataUrl.startsWith("data:image/jpeg;base64,")) throw invalida();
                     int width = reader.getWidth(0), height = reader.getHeight(0);
                     if (width < 1 || height < 1 || width > 1024 || height > 1024) throw invalida();
                     BufferedImage original = reader.read(0);

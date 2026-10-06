@@ -3,6 +3,7 @@ package br.com.neurohelp.tcc_backend.Security;
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
 import br.com.neurohelp.tcc_backend.Entity.User.UserProf;
 import br.com.neurohelp.tcc_backend.Entity.User.UserResp;
+import br.com.neurohelp.tcc_backend.Entity.User.UserAdmin;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
@@ -25,6 +26,7 @@ public class TokenService {
         String tipoPerfil;
         if (usuario instanceof UserProf) tipoPerfil = "PROFISSIONAL";
         else if (usuario instanceof UserResp) tipoPerfil = "RESPONSAVEL";
+        else if (usuario instanceof UserAdmin) tipoPerfil = "ADMIN";
         else throw new IllegalArgumentException("Tipo de usuário não suportado.");
 
         return JWT.create()

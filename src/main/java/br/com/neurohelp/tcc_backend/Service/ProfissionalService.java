@@ -28,4 +28,12 @@ public class ProfissionalService {
         return repository.findById(id).map(ProfissionalResponseDTO::new)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional não encontrado."));
     }
+
+    public byte[] foto(Long id) {
+        String foto = repository.findById(id).orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Profissional não encontrado.")).getFotoPerfil();
+        if (foto == null || !foto.startsWith("data:image/jpeg;base64,")) throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Foto não disponível.");
+        return java.util.Base64.getDecoder().decode(foto.substring(foto.indexOf(',') + 1));
+    }
 }

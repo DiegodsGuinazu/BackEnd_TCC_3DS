@@ -4,6 +4,7 @@ import br.com.neurohelp.tcc_backend.DTO.Login;
 import br.com.neurohelp.tcc_backend.Entity.User.UsuarioAutenticavel;
 import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import br.com.neurohelp.tcc_backend.Repository.responsavelRepository;
+import br.com.neurohelp.tcc_backend.Repository.AdminRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,8 +21,10 @@ import java.util.Map;
         private final responsavelRepository responsavelRepository;
         private final TokenService tokenService;
         private final PasswordEncoder passwordEncoder;
+        private final AdminRepository admins;
 
-        public AuthController(profissionalRepository profissionalRepository, responsavelRepository responsavelRepository, TokenService tokenService, PasswordEncoder passwordEncoder) {
+        public AuthController(profissionalRepository profissionalRepository, responsavelRepository responsavelRepository, TokenService tokenService, PasswordEncoder passwordEncoder, AdminRepository admins) {
+            this.admins = admins;
             this.profissionalRepository = profissionalRepository;
             this.responsavelRepository = responsavelRepository;
             this.tokenService = tokenService;
@@ -31,12 +34,17 @@ import java.util.Map;
         @PostMapping("/login")
         public ResponseEntity<?> login(@RequestBody Login dados) {
 
-            var profissional = profissionalRepository.findByEmail(dados.getEmail()).orElse(null);
-            var responsavel = responsavelRepository.findByEmail(dados.getEmail()).orElse(null);
-            if (profissional != null && responsavel != null) {
+            if (dados.getEmail() == null || dados.getSenha() == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email ou senha inválidos.");
             }
-            UsuarioAutenticavel usuario = profissional != null ? profissional : responsavel;
+            String email = dados.getEmail().trim().toLowerCase(java.util.Locale.ROOT);
+            var profissional = profissionalRepository.findByEmailIgnoreCase(email).orElse(null);
+            var responsavel = responsavelRepository.findByEmailIgnoreCase(email).orElse(null);
+            var admin = admins.findByEmailIgnoreCase(email).orElse(null);
+            if ((profissional != null ? 1 : 0) + (responsavel != null ? 1 : 0) + (admin != null ? 1 : 0) > 1) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email ou senha inválidos.");
+            }
+            UsuarioAutenticavel usuario = admin != null ? admin : profissional != null ? profissional : responsavel;
 
             if (usuario == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email ou senha inválidos.");

@@ -3,6 +3,7 @@ package br.com.neurohelp.tcc_backend.Controller;
 import br.com.neurohelp.tcc_backend.DTO.ProfissionalResponseDTO;
 import br.com.neurohelp.tcc_backend.Service.ProfissionalService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.*;
 
 import java.util.List;
 
@@ -16,12 +17,18 @@ public class ProfissionaisController {
     }
 
     @GetMapping
-    public List<ProfissionalResponseDTO> listar() {
-        return service.listar();
+    public ResponseEntity<List<ProfissionalResponseDTO>> listar() {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.listar());
     }
 
     @GetMapping("/{id}")
-    public ProfissionalResponseDTO buscar(@PathVariable Long id) {
-        return service.buscar(id);
+    public ResponseEntity<ProfissionalResponseDTO> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.buscar(id));
+    }
+
+    @GetMapping("/{id}/foto")
+    public ResponseEntity<byte[]> foto(@PathVariable Long id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_JPEG)
+                .header("X-Content-Type-Options", "nosniff").body(service.foto(id));
     }
 }

@@ -138,4 +138,23 @@ class FotoPerfilTest {
         mvc.perform(get("/api/profissionais"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].fotoPerfil").doesNotExist());
     }
+
+    @Test
+    void fotoPublicaDoProfissionalRecarregaSemExporDadosPrivados() throws Exception {
+        mvc.perform(put("/api/conta/foto").header("Authorization", bearer(prof))
+                .contentType(MediaType.APPLICATION_JSON).content(corpo(imagem(32, 32))))
+                .andExpect(status().isOk());
+        em.flush(); em.clear();
+        mvc.perform(get("/api/profissionais"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].fotoPerfilUrl").value("/api/profissionais/" + prof.getId() + "/foto"))
+                .andExpect(jsonPath("$[0].senha").doesNotExist()).andExpect(jsonPath("$[0].email").doesNotExist());
+        mvc.perform(get("/api/profissionais/" + prof.getId() + "/foto"))
+                .andExpect(status().isOk()).andExpect(content().contentType(MediaType.IMAGE_JPEG))
+                .andExpect(header().string("Cache-Control", "no-store"));
+        mvc.perform(get("/api/profissionais/999999/foto")).andExpect(status().isNotFound());
+        mvc.perform(put("/api/conta/foto").header("Authorization", bearer(prof))
+                .contentType(MediaType.APPLICATION_JSON).content(corpo(imagem(32, 32).replace("image/png", "image/jpeg"))))
+                .andExpect(status().isBadRequest());
+    }
 }

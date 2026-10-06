@@ -1,0 +1,943 @@
+diff --git a/app/src/main/java/com/example/neurohelp/Perfil/FragmentPerfil.kt b/app/src/main/java/com/example/neurohelp/Perfil/FragmentPerfil.kt
+index fbdd1c8762014f9bbcc2d0bac447f3c46e4f8ba1..15f4c6100f28525a9a20c374e7e9248eb03ea372 100644
+--- a/app/src/main/java/com/example/neurohelp/Perfil/FragmentPerfil.kt
++++ b/app/src/main/java/com/example/neurohelp/Perfil/FragmentPerfil.kt
+@@ -7,12 +7,27 @@ import android.view.View
+ import android.view.ViewGroup
+ import android.widget.LinearLayout
+ import androidx.fragment.app.Fragment
++import androidx.lifecycle.lifecycleScope
++import kotlinx.coroutines.launch
+ import com.example.neurohelp.ajuda.FragmentAjuda
+ import com.example.neurohelp.Login.Login
+ import com.example.neurohelp.R
+ import com.example.neurohelp.notificacoes.FragmentNotificacoes
+ 
+ class FragmentPerfil : Fragment() {
++    private val photoPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
++        if (uri != null && view != null) viewLifecycleOwner.lifecycleScope.launch {
++            val avatar = requireView().findViewById<android.widget.ImageView>(R.id.fotoConta)
++            avatar.isEnabled = false
++            try {
++                val bitmap = com.example.neurohelp.auth.ProfilePhoto.upload(this@FragmentPerfil, uri)
++                avatar.imageTintList = null; avatar.setImageBitmap(bitmap)
++                android.widget.Toast.makeText(requireContext(), "Foto atualizada.", android.widget.Toast.LENGTH_SHORT).show()
++            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
++            catch (_: Exception) { android.widget.Toast.makeText(requireContext(), "Não foi possível salvar. Escolha JPG, PNG ou WebP de até 5 MB e verifique sua conexão.", android.widget.Toast.LENGTH_LONG).show() }
++            finally { avatar.isEnabled = true }
++        }
++    }
+ 
+     override fun onCreateView(
+         inflater: LayoutInflater,
+@@ -29,6 +44,18 @@ class FragmentPerfil : Fragment() {
+ 
+     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+         super.onViewCreated(view, savedInstanceState)
++        val avatar = view.findViewById<android.widget.ImageView>(R.id.fotoConta)
++        com.example.neurohelp.auth.ProfilePhoto.own(this, avatar)
++        avatar.setOnClickListener { photoPicker.launch("image/*") }
++        viewLifecycleOwner.lifecycleScope.launch {
++            try {
++                val user = org.json.JSONObject(com.example.neurohelp.auth.ApiService(com.example.neurohelp.auth.SessionStore(requireContext())).protectedRequest("/api/auth/me"))
++                view.findViewById<android.widget.TextView>(R.id.txtNomeUsuario).text = user.optString("nome")
++                view.findViewById<android.widget.TextView>(R.id.txtEmailUsuario).text = user.optString("email")
++                avatar.isEnabled = user.optString("tipoPerfil") in setOf("RESPONSAVEL", "PROFISSIONAL")
++            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
++            catch (_: Exception) { avatar.isEnabled = false }
++        }
+ 
+         // Notificações
+         view.findViewById<LinearLayout>(R.id.itemNotificacoes).setOnClickListener {
+diff --git a/app/src/main/java/com/example/neurohelp/PrincipalActivity.kt b/app/src/main/java/com/example/neurohelp/PrincipalActivity.kt
+index bb36038fc440ef094e013c87359106a429091acb..5c48f29ee3aba99c3124247d56cc68f7a822ad7e 100644
+--- a/app/src/main/java/com/example/neurohelp/PrincipalActivity.kt
++++ b/app/src/main/java/com/example/neurohelp/PrincipalActivity.kt
+@@ -54,6 +54,9 @@ class PrincipalActivity : AppCompatActivity() {
+             object : FragmentManager.FragmentLifecycleCallbacks() {
+                 override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
+                     abaDoFragment(f)?.let { marcarAba(it) }
++                    f.view?.findViewById<android.widget.ImageView>(R.id.imgPerfil)?.let {
++                        com.example.neurohelp.auth.ProfilePhoto.own(f, it)
++                    }
+                 }
+             },
+             false
+diff --git a/app/src/main/java/com/example/neurohelp/Profissionais/FragmentPerfilProfissional.kt b/app/src/main/java/com/example/neurohelp/Profissionais/FragmentPerfilProfissional.kt
+index 11d101e51d81f21c266ca725ac901315cb55a9cf..6d0dc24fe649ccd8ccd5b3db387987d101dd29ec 100644
+--- a/app/src/main/java/com/example/neurohelp/Profissionais/FragmentPerfilProfissional.kt
++++ b/app/src/main/java/com/example/neurohelp/Profissionais/FragmentPerfilProfissional.kt
+@@ -19,6 +19,11 @@ import com.example.neurohelp.Perfil.FragmentPerfil
+ import com.example.neurohelp.R
+ import com.example.neurohelp.notificacoes.abrirNotificacoes
+ import java.util.Locale
++import androidx.lifecycle.lifecycleScope
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.CancellationException
++import com.example.neurohelp.auth.*
++import org.json.JSONObject
+ 
+ class FragmentPerfilProfissional : Fragment() {
+ 
+@@ -52,13 +57,40 @@ class FragmentPerfilProfissional : Fragment() {
+         super.onViewCreated(view, savedInstanceState)
+ 
+         val id = arguments?.getInt(ARG_ID, 0) ?: 0
+-        profissional = ProfissionalMock.exemplo(id) // TODO: buscar na API pelo id
+-
+         configurarCabecalho(view)
+-        preencherDados(view)
+-        configurarFavoritar(view)
+-        configurarAgendar(view)
+-        configurarAvaliacoes(view)
++        for (element in listOf(R.id.txtProfissaoProfissional, R.id.txtRegistroProfissional,
++            R.id.txtAtendimentoProfissional, R.id.txtLocalProfissional, R.id.txtTotalAvaliacoes,
++            R.id.txtAbordagem, R.id.txtPublicoAlvo, R.id.txtSobreMim, R.id.txtNotaMedia)) {
++            view.findViewById<TextView>(element).text = ""
++        }
++        for (element in listOf(R.id.estrelasProfissional, R.id.estrelasResumo,
++            R.id.btnFiltrosAvaliacoes, R.id.edtComentario, R.id.btnVerMais)) view.findViewById<View>(element).visibility = View.GONE
++        view.findViewById<TextView>(R.id.txtNomeProfissional).text = "Carregando..."
++        view.findViewById<View>(R.id.btnAgendarConsulta).isEnabled = false
++        view.findViewById<View>(R.id.btnFavoritar).isEnabled = false
++        viewLifecycleOwner.lifecycleScope.launch {
++            try {
++                val data = JSONObject(ApiService(SessionStore(requireContext())).protectedRequest("/api/profissionais/$id"))
++                fun text(field: String) = data.optString(field, "").takeUnless { it == "null" }.orEmpty()
++                profissional = ProfissionalPerfil(id, text("nome"), text("formacao"), text("numRegistro"),
++                    "Não informado", listOf(text("cidade"), text("estado")).filter { it.isNotBlank() }.joinToString(" - "),
++                    0.0, 0, "Não informado", "Não informado", text("bio"),
++                    text("telefone").filter { it.isDigit() }.let { if (it.length in 10..11) "55$it" else it }, emptyList())
++                preencherDados(view)
++                ProfilePhoto.professional(this@FragmentPerfilProfissional, view.findViewById(R.id.imgFotoProfissional),
++                    text("fotoPerfilUrl").takeIf { it.startsWith("/") })
++                configurarFavoritar(view); view.findViewById<View>(R.id.btnFavoritar).isEnabled = true
++                configurarAgendar(view)
++                view.findViewById<View>(R.id.btnAgendarConsulta).isEnabled = profissional.whatsapp.isNotBlank()
++                configurarAvaliacoes(view)
++                // Não há contrato de avaliações na API atual; não exibe notas demonstrativas.
++                for (element in listOf(R.id.estrelasProfissional, R.id.txtTotalAvaliacoes, R.id.txtNotaMedia,
++                    R.id.estrelasResumo, R.id.btnFiltrosAvaliacoes, R.id.edtComentario)) view.findViewById<View>(element).visibility = View.GONE
++            } catch (e: CancellationException) { throw e }
++            catch (e: ApiException) {
++                view.findViewById<TextView>(R.id.txtNomeProfissional).text = e.message
++            } catch (_: Exception) { view.findViewById<TextView>(R.id.txtNomeProfissional).text = "Não foi possível carregar este perfil." }
++        }
+     }
+ 
+     // ---------------------------------------------------------------
+diff --git a/app/src/main/java/com/example/neurohelp/Profissionais/FragmentProfissionais.kt b/app/src/main/java/com/example/neurohelp/Profissionais/FragmentProfissionais.kt
+index 6e61497b5f88e7e9493697894d39f8c24c891d3a..13abab9265da2726993ef6c6d745b24f4ace8b13 100644
+--- a/app/src/main/java/com/example/neurohelp/Profissionais/FragmentProfissionais.kt
++++ b/app/src/main/java/com/example/neurohelp/Profissionais/FragmentProfissionais.kt
+@@ -16,6 +16,15 @@ import android.widget.TextView
+ import androidx.fragment.app.Fragment
+ import com.example.neurohelp.R
+ import com.example.neurohelp.notificacoes.abrirNotificacoes
++import androidx.lifecycle.lifecycleScope
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.CancellationException
++import android.widget.LinearLayout
++import android.widget.ImageView
++import org.json.JSONArray
++import com.example.neurohelp.auth.ApiService
++import com.example.neurohelp.auth.SessionStore
++import com.example.neurohelp.auth.ProfilePhoto
+ 
+ class FragmentProfissionais : Fragment() {
+ 
+@@ -48,9 +57,9 @@ class FragmentProfissionais : Fragment() {
+         }
+ 
+         // "Ver Perfil" abre a tela de perfil do profissional
+-        view.findViewById<View>(R.id.btnPerfil1).setOnClickListener {
++        view.findViewById<View>(R.id.imgPerfil).setOnClickListener {
+             parentFragmentManager.beginTransaction()
+-                .replace(R.id.fragmentContainer, FragmentPerfilProfissional.newInstance(1))
++                .replace(R.id.fragmentContainer, com.example.neurohelp.Perfil.FragmentPerfil())
+                 .addToBackStack(null)
+                 .commit()
+         }
+@@ -58,6 +67,44 @@ class FragmentProfissionais : Fragment() {
+         return view
+     }
+ 
++    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
++        super.onViewCreated(view, savedInstanceState)
++        val quantity = view.findViewById<TextView>(R.id.txtQuantidade)
++        val container = view.findViewById<LinearLayout>(R.id.listaProfissionaisApi)
++        quantity.text = "Carregando profissionais..."
++        viewLifecycleOwner.lifecycleScope.launch {
++            try {
++                val list = JSONArray(ApiService(SessionStore(requireContext())).publicRequest("/api/profissionais"))
++                quantity.text = "${list.length()} profissionais encontrados"
++                for (index in 0 until list.length()) {
++                    val professional = list.getJSONObject(index)
++                    val id = professional.getString("id").toInt()
++                    val card = layoutInflater.inflate(R.layout.profissional_card_api, container, false)
++                    card.findViewById<TextView>(R.id.txtNome1).text = professional.optString("nome")
++                    card.findViewById<TextView>(R.id.txtProfissao1).text = professional.optString("formacao", "")
++                    card.findViewById<TextView>(R.id.txtLocal1).text = listOf(professional.optString("cidade", ""), professional.optString("estado", ""))
++                        .filter { it.isNotBlank() && it != "null" }.joinToString(" - ")
++                    // A API não fornece avaliações ou modalidades. Evita apresentar os exemplos como dados reais.
++                    card.findViewById<View>(R.id.txtcrp).visibility = View.GONE
++                    card.findViewById<View>(R.id.layoutAvaliacao1).visibility = View.GONE
++                    card.findViewById<View>(R.id.txtOnline1).visibility = View.GONE
++                    card.findViewById<View>(R.id.imgOnline1).visibility = View.GONE
++                    card.findViewById<View>(R.id.layoutFavorito1).visibility = View.GONE
++                    card.findViewById<View>(R.id.btnAgendar1).visibility = View.GONE
++                    card.findViewById<View>(R.id.btnPerfil1).setOnClickListener {
++                        parentFragmentManager.beginTransaction()
++                            .replace(R.id.fragmentContainer, FragmentPerfilProfissional.newInstance(id))
++                            .addToBackStack(null).commit()
++                    }
++                    ProfilePhoto.professional(this@FragmentProfissionais, card.findViewById<ImageView>(R.id.imgAvatar1),
++                        professional.optString("fotoPerfilUrl").takeIf { it.startsWith("/") })
++                    container.addView(card)
++                }
++            } catch (e: CancellationException) { throw e }
++            catch (_: Exception) { quantity.text = "Não foi possível carregar os profissionais. Abra a aba novamente para tentar." }
++        }
++    }
++
+     private fun abrirFiltros() {
+ 
+         // Evita abrir dois filtros ao mesmo tempo
+@@ -318,4 +365,4 @@ class FragmentProfissionais : Fragment() {
+ 
+         super.onDestroyView()
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/app/src/main/java/com/example/neurohelp/auth/ApiService.kt b/app/src/main/java/com/example/neurohelp/auth/ApiService.kt
+index 67092b69e7f9a4ec06d39df5a9eec3db678c62c8..98fde68dfbfcd46451985c9c587456d39b5f5c7c 100644
+--- a/app/src/main/java/com/example/neurohelp/auth/ApiService.kt
++++ b/app/src/main/java/com/example/neurohelp/auth/ApiService.kt
+@@ -26,6 +26,24 @@ class ApiService(private val session: SessionStore, private val baseUrl: String
+     }
+     suspend fun protectedRequest(path: String, method: String = "GET", body: JSONObject? = null): String =
+         request(path, method, body, true)
++    suspend fun publicRequest(path: String): String = request(path, "GET", null)
++
++    suspend fun professionalPhoto(path: String): ByteArray = withContext(Dispatchers.IO) {
++        require(Regex("/api/profissionais/[0-9]+/foto").matches(path))
++        val base = URI(baseUrl)
++        require(base.scheme == "https")
++        val connection = openConnection(base.resolve(path).toURL())
++        try {
++            connection.instanceFollowRedirects = false
++            connection.connectTimeout = 30000; connection.readTimeout = 60000
++            connection.useCaches = false
++            connection.setRequestProperty("Cache-Control", "no-cache")
++            if (connection.responseCode !in 200..299) throw ApiException(connection.responseCode, "Foto não disponível.")
++            require(connection.contentType?.startsWith("image/jpeg") == true)
++            val bytes = connection.inputStream.use { it.readBytesLimited(256 * 1024) }
++            bytes
++        } finally { connection.disconnect() }
++    }
+ 
+     private suspend fun request(path: String, method: String, body: JSONObject?, isProtected: Boolean = false): String = withContext(Dispatchers.IO) {
+         require(path.startsWith("/") && !path.startsWith("//") && !path.contains('\\'))
+@@ -37,6 +55,7 @@ class ApiService(private val session: SessionStore, private val baseUrl: String
+         try {
+             connection.requestMethod = method
+             connection.instanceFollowRedirects = false
++            connection.useCaches = false
+             connection.connectTimeout = 30000
+             connection.readTimeout = 60000
+             connection.setRequestProperty("Accept", "application/json, text/plain")
+@@ -50,7 +69,6 @@ class ApiService(private val session: SessionStore, private val baseUrl: String
+             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+             val response = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+             if (status !in 200..299) {
+-                if (BuildConfig.DEBUG) android.util.Log.e("ApiService", "HTTP $status em $method $path | enviado=${body?.toString()?.replace(Regex("\"senha\":\"[^\"]*\""), "\"senha\":\"***\"")} | resposta=$response")
+                 if (isProtected && status == 401) session.clear()
+                 throw ApiException(status, errorMessage(status, isProtected))
+             }
+@@ -68,4 +86,16 @@ class ApiService(private val session: SessionStore, private val baseUrl: String
+             else -> "Não foi possível concluir a solicitação. Tente novamente mais tarde."
+         }
+     }
+-}
+\ No newline at end of file
++}
++
++internal fun java.io.InputStream.readBytesLimited(limit: Int): ByteArray {
++    val output = java.io.ByteArrayOutputStream()
++    val buffer = ByteArray(8192)
++    while (true) {
++        val count = read(buffer)
++        if (count == -1) break
++        require(output.size() + count <= limit) { "Arquivo maior que o limite permitido." }
++        output.write(buffer, 0, count)
++    }
++    return output.toByteArray()
++}
+diff --git a/app/src/main/java/com/example/neurohelp/auth/ProfilePhoto.kt b/app/src/main/java/com/example/neurohelp/auth/ProfilePhoto.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..329f9ae670d61c80a019872db8bfbe84ab36f90e
+--- /dev/null
++++ b/app/src/main/java/com/example/neurohelp/auth/ProfilePhoto.kt
+@@ -0,0 +1,82 @@
++package com.example.neurohelp.auth
++
++import android.graphics.*;
++import android.net.Uri
++import android.util.Base64
++import android.widget.ImageView
++import androidx.fragment.app.Fragment
++import androidx.lifecycle.lifecycleScope
++import com.example.neurohelp.R
++import kotlinx.coroutines.*
++import org.json.JSONObject
++import java.io.ByteArrayOutputStream
++
++object ProfilePhoto {
++    private fun render(view: ImageView, bitmap: Bitmap?) {
++        view.imageTintList = null
++        view.scaleType = ImageView.ScaleType.CENTER_CROP
++        if (bitmap == null) view.setImageResource(R.drawable.avatar_verde) else view.setImageBitmap(bitmap)
++    }
++    fun own(fragment: Fragment, view: ImageView) {
++        val service = ApiService(SessionStore(fragment.requireContext()))
++        render(view, null)
++        fragment.viewLifecycleOwner.lifecycleScope.launch {
++            try {
++                val result = JSONObject(service.protectedRequest("/api/conta/foto"))
++                render(view, decode(result.optString("fotoPerfil")))
++            } catch (e: CancellationException) { throw e } catch (_: Exception) { render(view, null) }
++        }
++    }
++    fun professional(fragment: Fragment, view: ImageView, path: String?) {
++        render(view, null)
++        if (path.isNullOrBlank()) return
++        val service = ApiService(SessionStore(fragment.requireContext()))
++        fragment.viewLifecycleOwner.lifecycleScope.launch {
++            try {
++                val bytes = service.professionalPhoto(path)
++                val bitmap = withContext(Dispatchers.Default) { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
++                render(view, bitmap)
++            } catch (e: CancellationException) { throw e } catch (_: Exception) { render(view, null) }
++        }
++    }
++    fun decode(data: String?): Bitmap? {
++        if (data == null || !data.startsWith("data:image/jpeg;base64,") || data.length > 350000) return null
++        return try {
++            val bytes = Base64.decode(data.substringAfter(','), Base64.DEFAULT)
++            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
++            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
++            if (bounds.outWidth !in 1..1024 || bounds.outHeight !in 1..1024) null
++            else BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
++        } catch (_: Exception) { null }
++    }
++    suspend fun upload(fragment: Fragment, uri: Uri): Bitmap? {
++        val context = fragment.requireContext().applicationContext
++        val service = ApiService(SessionStore(context))
++        val data = withContext(Dispatchers.IO) {
++            require(context.contentResolver.getType(uri) in setOf("image/jpeg", "image/png", "image/webp"))
++            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytesLimited(5 * 1024 * 1024) }
++                ?: throw IllegalArgumentException("Não foi possível abrir a imagem.")
++            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
++            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
++            require(options.outWidth > 0 && options.outHeight > 0 && options.outWidth.toLong() * options.outHeight <= 24000000)
++            options.inJustDecodeBounds = false
++            options.inSampleSize = maxOf(1, maxOf(options.outWidth, options.outHeight) / 1024)
++            val source = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
++                ?: throw IllegalArgumentException("Imagem inválida.")
++            val side = minOf(source.width, source.height)
++            val avatar = Bitmap.createBitmap(256, 256, Bitmap.Config.RGB_565)
++            Canvas(avatar).apply {
++                drawColor(Color.WHITE)
++                drawBitmap(source, Rect((source.width - side) / 2, (source.height - side) / 2,
++                    (source.width + side) / 2, (source.height + side) / 2), Rect(0, 0, 256, 256),
++                    Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
++            }
++            val output = ByteArrayOutputStream()
++            avatar.compress(Bitmap.CompressFormat.JPEG, 85, output)
++            source.recycle(); avatar.recycle()
++            "data:image/jpeg;base64," + Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
++        }
++        val result = JSONObject(service.protectedRequest("/api/conta/foto", "PUT", JSONObject().put("fotoPerfil", data)))
++        return decode(result.optString("fotoPerfil"))
++    }
++}
+diff --git a/app/src/main/res/layout/perfil_fragment.xml b/app/src/main/res/layout/perfil_fragment.xml
+index 2905cc80ea30fb9eb47a7945ebdc76a207abb3ba..a8ae15569fa1ab0aff25c3d1795a5b011942ef83 100644
+--- a/app/src/main/res/layout/perfil_fragment.xml
++++ b/app/src/main/res/layout/perfil_fragment.xml
+@@ -45,10 +45,14 @@
+                     app:cardElevation="0dp">
+ 
+                     <ImageView
+-                        android:layout_width="48dp"
+-                        android:layout_height="48dp"
++                        android:id="@+id/fotoConta"
++                        android:clickable="true"
++                        android:focusable="true"
++                        android:scaleType="centerCrop"
++                        android:layout_width="match_parent"
++                        android:layout_height="match_parent"
+                         android:layout_gravity="center"
+-                        android:contentDescription="Foto do perfil"
++                        android:contentDescription="Alterar sua foto de perfil"
+                         android:src="@drawable/ic_person"
+                         app:tint="#FFFFFF" />
+ 
+diff --git a/app/src/main/res/layout/profissionais_fragment.xml b/app/src/main/res/layout/profissionais_fragment.xml
+index 94f32e5ad78062b9b719d186e196262ad6766d71..fe1a881ce5e0281a4a96f7f63c6233d18c26a05b 100644
+--- a/app/src/main/res/layout/profissionais_fragment.xml
++++ b/app/src/main/res/layout/profissionais_fragment.xml
+@@ -164,254 +164,7 @@
+                 android:textSize="12sp" />
+ 
+             <!-- CARD COMPACTO -->
+-            <com.google.android.material.card.MaterialCardView
+-                android:id="@+id/cardProfissional1"
+-                android:layout_width="match_parent"
+-                android:layout_height="wrap_content"
+-                android:layout_marginHorizontal="16dp"
+-                android:layout_marginTop="8dp"
+-                app:cardBackgroundColor="#FFFFFF"
+-                app:cardCornerRadius="14dp"
+-                app:cardElevation="0dp"
+-                app:strokeColor="#F2F2F2"
+-                app:strokeWidth="1dp">
+-
+-                <LinearLayout
+-                    android:layout_width="match_parent"
+-                    android:layout_height="wrap_content"
+-                    android:orientation="vertical"
+-                    android:padding="12dp">
+-
+-                    <!-- CONTEÚDO SUPERIOR -->
+-                    <androidx.constraintlayout.widget.ConstraintLayout
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content">
+-
+-                        <!-- FOTO -->
+-                        <ImageView
+-                            android:id="@+id/imgAvatar1"
+-                            android:layout_width="64dp"
+-                            android:layout_height="64dp"
+-                            android:contentDescription="Profissional"
+-                            android:scaleType="fitCenter"
+-                            android:src="@drawable/avatar_verde"
+-                            app:layout_constraintStart_toStartOf="parent"
+-                            app:layout_constraintTop_toTopOf="parent" />
+-
+-                        <!-- FAVORITO -->
+-                        <LinearLayout
+-                            android:id="@+id/layoutFavorito1"
+-                            android:layout_width="wrap_content"
+-                            android:layout_height="wrap_content"
+-                            android:gravity="center_vertical"
+-                            android:orientation="horizontal"
+-                            app:layout_constraintEnd_toEndOf="parent"
+-                            app:layout_constraintTop_toTopOf="parent">
+-
+-                            <TextView
+-                                android:id="@+id/txtFavorito1"
+-                                android:layout_width="wrap_content"
+-                                android:layout_height="wrap_content"
+-                                android:fontFamily="@font/nunito"
+-                                android:text="Favoritar"
+-                                android:textColor="#35C979"
+-                                android:textSize="10sp" />
+-
+-                            <ImageView
+-                                android:id="@+id/imgFavorito1"
+-                                android:layout_width="18dp"
+-                                android:layout_height="18dp"
+-                                android:layout_marginStart="4dp"
+-                                android:contentDescription="Favoritar"
+-                                android:src="@drawable/ic_favorito" />
+-
+-                        </LinearLayout>
+-
+-                        <!-- INFORMAÇÕES -->
+-                        <LinearLayout
+-                            android:id="@+id/infoProfissional"
+-                            android:layout_width="0dp"
+-                            android:layout_height="wrap_content"
+-                            android:layout_marginStart="12dp"
+-                            android:orientation="vertical"
+-                            app:layout_constraintEnd_toEndOf="parent"
+-                            app:layout_constraintStart_toEndOf="@id/imgAvatar1"
+-                            app:layout_constraintTop_toTopOf="parent">
+-
+-                            <!-- CRP -->
+-                            <TextView
+-                                android:id="@+id/txtcrp"
+-                                android:layout_width="wrap_content"
+-                                android:layout_height="wrap_content"
+-                                android:background="#F2FFF9"
+-                                android:fontFamily="@font/nunito"
+-                                android:paddingHorizontal="5dp"
+-                                android:paddingVertical="1dp"
+-                                android:text="CRP 06/123456"
+-                                android:textColor="#35C979"
+-                                android:textSize="10sp" />
+-
+-                            <!-- NOME -->
+-                            <TextView
+-                                android:id="@+id/txtNome1"
+-                                android:layout_width="match_parent"
+-                                android:layout_height="wrap_content"
+-                                android:layout_marginTop="6dp"
+-                                android:ellipsize="end"
+-                                android:fontFamily="@font/nunito_black"
+-                                android:maxLines="1"
+-                                android:text="Dra. XXXXX"
+-                                android:textColor="#073B5C"
+-                                android:textSize="15sp"
+-                                android:textStyle="bold" />
+-
+-                            <!-- PROFISSÃO -->
+-                            <TextView
+-                                android:id="@+id/txtProfissao1"
+-                                android:layout_width="match_parent"
+-                                android:layout_height="wrap_content"
+-                                android:ellipsize="end"
+-                                android:fontFamily="@font/nunito"
+-                                android:maxLines="1"
+-                                android:text="Psicóloga"
+-                                android:textColor="#073B5C"
+-                                android:textSize="13sp" />
+-
+-                        </LinearLayout>
+-
+-                    </androidx.constraintlayout.widget.ConstraintLayout>
+-
+-                    <!-- ATENDIMENTO -->
+-                    <LinearLayout
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        android:layout_marginTop="8dp"
+-                        android:gravity="center_vertical"
+-                        android:orientation="horizontal">
+-
+-                        <ImageView
+-                            android:id="@+id/imgOnline1"
+-                            android:layout_width="16dp"
+-                            android:layout_height="16dp"
+-                            android:src="@drawable/ic_online" />
+-
+-                        <TextView
+-                            android:id="@+id/txtOnline1"
+-                            android:layout_width="0dp"
+-                            android:layout_height="wrap_content"
+-                            android:layout_marginStart="6dp"
+-                            android:layout_weight="1"
+-                            android:ellipsize="end"
+-                            android:fontFamily="@font/nunito"
+-                            android:maxLines="1"
+-                            android:text="Atende online e presencial"
+-                            android:textColor="#073B5C"
+-                            android:textSize="12sp" />
+-
+-                    </LinearLayout>
+-
+-                    <!-- LOCALIZAÇÃO + AVALIAÇÃO (mesma linha) -->
+-                    <LinearLayout
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        android:layout_marginTop="4dp"
+-                        android:gravity="center_vertical"
+-                        android:orientation="horizontal">
+-
+-                        <ImageView
+-                            android:id="@+id/imgLocal1"
+-                            android:layout_width="16dp"
+-                            android:layout_height="16dp"
+-                            android:src="@drawable/ic_localizacao" />
+-
+-                        <TextView
+-                            android:id="@+id/txtLocal1"
+-                            android:layout_width="0dp"
+-                            android:layout_height="wrap_content"
+-                            android:layout_marginStart="6dp"
+-                            android:layout_weight="1"
+-                            android:ellipsize="end"
+-                            android:fontFamily="@font/nunito"
+-                            android:maxLines="1"
+-                            android:text="São Paulo - SP"
+-                            android:textColor="#073B5C"
+-                            android:textSize="12sp" />
+-
+-                        <LinearLayout
+-                            android:id="@+id/layoutAvaliacao1"
+-                            android:layout_width="wrap_content"
+-                            android:layout_height="wrap_content"
+-                            android:layout_marginStart="8dp"
+-                            android:gravity="center_vertical"
+-                            android:orientation="horizontal">
+-
+-                            <TextView
+-                                android:id="@+id/txtEstrelas1"
+-                                android:layout_width="wrap_content"
+-                                android:layout_height="wrap_content"
+-                                android:fontFamily="@font/nunito"
+-                                android:text="★★★★☆"
+-                                android:textColor="#FFA914"
+-                                android:textSize="13sp" />
+-
+-                            <TextView
+-                                android:id="@+id/txtAvaliacao1"
+-                                android:layout_width="wrap_content"
+-                                android:layout_height="wrap_content"
+-                                android:layout_marginStart="3dp"
+-                                android:fontFamily="@font/nunito"
+-                                android:text="(97)"
+-                                android:textColor="#073B5C"
+-                                android:textSize="10sp" />
+-
+-                        </LinearLayout>
+-
+-                    </LinearLayout>
+-
+-                    <!-- BOTÕES -->
+-                    <LinearLayout
+-                        android:layout_width="match_parent"
+-                        android:layout_height="40dp"
+-                        android:layout_marginTop="12dp"
+-                        android:orientation="horizontal">
+-
+-                        <TextView
+-                            android:id="@+id/btnPerfil1"
+-                            android:layout_width="0dp"
+-                            android:layout_height="match_parent"
+-                            android:layout_marginEnd="5dp"
+-                            android:layout_weight="1"
+-                            android:background="@drawable/bg_btn_perfil"
+-                            android:clickable="true"
+-                            android:focusable="true"
+-                            android:fontFamily="@font/nunito_black"
+-                            android:gravity="center"
+-                            android:maxLines="1"
+-                            android:text="Ver Perfil"
+-                            android:textColor="#073B5C"
+-                            android:textSize="13sp" />
+-
+-                        <TextView
+-                            android:id="@+id/btnAgendar1"
+-                            android:layout_width="0dp"
+-                            android:layout_height="match_parent"
+-                            android:layout_marginStart="5dp"
+-                            android:layout_weight="1"
+-                            android:background="@drawable/botao_gradiente"
+-                            android:clickable="true"
+-                            android:focusable="true"
+-                            android:fontFamily="@font/nunito_black"
+-                            android:gravity="center"
+-                            android:maxLines="1"
+-                            android:text="Agendar Consulta"
+-                            android:textColor="#FFFFFF"
+-                            android:textSize="13sp" />
+-
+-                    </LinearLayout>
+-
+-                </LinearLayout>
+-
+-            </com.google.android.material.card.MaterialCardView>
++            <LinearLayout android:id="@+id/listaProfissionaisApi" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+ 
+             <!-- Espaço para a barra de navegação inferior -->
+             <View
+diff --git a/app/src/main/res/layout/profissional_card_api.xml b/app/src/main/res/layout/profissional_card_api.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..1bd26cc5727147ccbe9d43e38af2eaaf9c82a8d6
+--- /dev/null
++++ b/app/src/main/res/layout/profissional_card_api.xml
+@@ -0,0 +1,249 @@
++<?xml version="1.0" encoding="utf-8"?>
++<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
++                android:id="@+id/cardProfissional1"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_marginHorizontal="16dp"
++                android:layout_marginTop="8dp"
++                app:cardBackgroundColor="#FFFFFF"
++                app:cardCornerRadius="14dp"
++                app:cardElevation="0dp"
++                app:strokeColor="#F2F2F2"
++                app:strokeWidth="1dp">
++
++                <LinearLayout
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:orientation="vertical"
++                    android:padding="12dp">
++
++                    <!-- CONTEÚDO SUPERIOR -->
++                    <androidx.constraintlayout.widget.ConstraintLayout
++                        android:layout_width="match_parent"
++                        android:layout_height="wrap_content">
++
++                        <!-- FOTO -->
++                        <ImageView
++                            android:id="@+id/imgAvatar1"
++                            android:layout_width="64dp"
++                            android:layout_height="64dp"
++                            android:contentDescription="Profissional"
++                            android:scaleType="fitCenter"
++                            android:src="@drawable/avatar_verde"
++                            app:layout_constraintStart_toStartOf="parent"
++                            app:layout_constraintTop_toTopOf="parent" />
++
++                        <!-- FAVORITO -->
++                        <LinearLayout
++                            android:id="@+id/layoutFavorito1"
++                            android:layout_width="wrap_content"
++                            android:layout_height="wrap_content"
++                            android:gravity="center_vertical"
++                            android:orientation="horizontal"
++                            app:layout_constraintEnd_toEndOf="parent"
++                            app:layout_constraintTop_toTopOf="parent">
++
++                            <TextView
++                                android:id="@+id/txtFavorito1"
++                                android:layout_width="wrap_content"
++                                android:layout_height="wrap_content"
++                                android:fontFamily="@font/nunito"
++                                android:text="Favoritar"
++                                android:textColor="#35C979"
++                                android:textSize="10sp" />
++
++                            <ImageView
++                                android:id="@+id/imgFavorito1"
++                                android:layout_width="18dp"
++                                android:layout_height="18dp"
++                                android:layout_marginStart="4dp"
++                                android:contentDescription="Favoritar"
++                                android:src="@drawable/ic_favorito" />
++
++                        </LinearLayout>
++
++                        <!-- INFORMAÇÕES -->
++                        <LinearLayout
++                            android:id="@+id/infoProfissional"
++                            android:layout_width="0dp"
++                            android:layout_height="wrap_content"
++                            android:layout_marginStart="12dp"
++                            android:orientation="vertical"
++                            app:layout_constraintEnd_toEndOf="parent"
++                            app:layout_constraintStart_toEndOf="@id/imgAvatar1"
++                            app:layout_constraintTop_toTopOf="parent">
++
++                            <!-- CRP -->
++                            <TextView
++                                android:id="@+id/txtcrp"
++                                android:layout_width="wrap_content"
++                                android:layout_height="wrap_content"
++                                android:background="#F2FFF9"
++                                android:fontFamily="@font/nunito"
++                                android:paddingHorizontal="5dp"
++                                android:paddingVertical="1dp"
++                                android:text="CRP 06/123456"
++                                android:textColor="#35C979"
++                                android:textSize="10sp" />
++
++                            <!-- NOME -->
++                            <TextView
++                                android:id="@+id/txtNome1"
++                                android:layout_width="match_parent"
++                                android:layout_height="wrap_content"
++                                android:layout_marginTop="6dp"
++                                android:ellipsize="end"
++                                android:fontFamily="@font/nunito_black"
++                                android:maxLines="1"
++                                android:text="Dra. XXXXX"
++                                android:textColor="#073B5C"
++                                android:textSize="15sp"
++                                android:textStyle="bold" />
++
++                            <!-- PROFISSÃO -->
++                            <TextView
++                                android:id="@+id/txtProfissao1"
++                                android:layout_width="match_parent"
++                                android:layout_height="wrap_content"
++                                android:ellipsize="end"
++                                android:fontFamily="@font/nunito"
++                                android:maxLines="1"
++                                android:text="Psicóloga"
++                                android:textColor="#073B5C"
++                                android:textSize="13sp" />
++
++                        </LinearLayout>
++
++                    </androidx.constraintlayout.widget.ConstraintLayout>
++
++                    <!-- ATENDIMENTO -->
++                    <LinearLayout
++                        android:layout_width="match_parent"
++                        android:layout_height="wrap_content"
++                        android:layout_marginTop="8dp"
++                        android:gravity="center_vertical"
++                        android:orientation="horizontal">
++
++                        <ImageView
++                            android:id="@+id/imgOnline1"
++                            android:layout_width="16dp"
++                            android:layout_height="16dp"
++                            android:src="@drawable/ic_online" />
++
++                        <TextView
++                            android:id="@+id/txtOnline1"
++                            android:layout_width="0dp"
++                            android:layout_height="wrap_content"
++                            android:layout_marginStart="6dp"
++                            android:layout_weight="1"
++                            android:ellipsize="end"
++                            android:fontFamily="@font/nunito"
++                            android:maxLines="1"
++                            android:text="Atende online e presencial"
++                            android:textColor="#073B5C"
++                            android:textSize="12sp" />
++
++                    </LinearLayout>
++
++                    <!-- LOCALIZAÇÃO + AVALIAÇÃO (mesma linha) -->
++                    <LinearLayout
++                        android:layout_width="match_parent"
++                        android:layout_height="wrap_content"
++                        android:layout_marginTop="4dp"
++                        android:gravity="center_vertical"
++                        android:orientation="horizontal">
++
++                        <ImageView
++                            android:id="@+id/imgLocal1"
++                            android:layout_width="16dp"
++                            android:layout_height="16dp"
++                            android:src="@drawable/ic_localizacao" />
++
++                        <TextView
++                            android:id="@+id/txtLocal1"
++                            android:layout_width="0dp"
++                            android:layout_height="wrap_content"
++                            android:layout_marginStart="6dp"
++                            android:layout_weight="1"
++                            android:ellipsize="end"
++                            android:fontFamily="@font/nunito"
++                            android:maxLines="1"
++                            android:text="São Paulo - SP"
++                            android:textColor="#073B5C"
++                            android:textSize="12sp" />
++
++                        <LinearLayout
++                            android:id="@+id/layoutAvaliacao1"
++                            android:layout_width="wrap_content"
++                            android:layout_height="wrap_content"
++                            android:layout_marginStart="8dp"
++                            android:gravity="center_vertical"
++                            android:orientation="horizontal">
++
++                            <TextView
++                                android:id="@+id/txtEstrelas1"
++                                android:layout_width="wrap_content"
++                                android:layout_height="wrap_content"
++                                android:fontFamily="@font/nunito"
++                                android:text="★★★★☆"
++                                android:textColor="#FFA914"
++                                android:textSize="13sp" />
++
++                            <TextView
++                                android:id="@+id/txtAvaliacao1"
++                                android:layout_width="wrap_content"
++                                android:layout_height="wrap_content"
++                                android:layout_marginStart="3dp"
++                                android:fontFamily="@font/nunito"
++                                android:text="(97)"
++                                android:textColor="#073B5C"
++                                android:textSize="10sp" />
++
++                        </LinearLayout>
++
++                    </LinearLayout>
++
++                    <!-- BOTÕES -->
++                    <LinearLayout
++                        android:layout_width="match_parent"
++                        android:layout_height="40dp"
++                        android:layout_marginTop="12dp"
++                        android:orientation="horizontal">
++
++                        <TextView
++                            android:id="@+id/btnPerfil1"
++                            android:layout_width="0dp"
++                            android:layout_height="match_parent"
++                            android:layout_marginEnd="5dp"
++                            android:layout_weight="1"
++                            android:background="@drawable/bg_btn_perfil"
++                            android:clickable="true"
++                            android:focusable="true"
++                            android:fontFamily="@font/nunito_black"
++                            android:gravity="center"
++                            android:maxLines="1"
++                            android:text="Ver Perfil"
++                            android:textColor="#073B5C"
++                            android:textSize="13sp" />
++
++                        <TextView
++                            android:id="@+id/btnAgendar1"
++                            android:layout_width="0dp"
++                            android:layout_height="match_parent"
++                            android:layout_marginStart="5dp"
++                            android:layout_weight="1"
++                            android:background="@drawable/botao_gradiente"
++                            android:clickable="true"
++                            android:focusable="true"
++                            android:fontFamily="@font/nunito_black"
++                            android:gravity="center"
++                            android:maxLines="1"
++                            android:text="Agendar Consulta"
++                            android:textColor="#FFFFFF"
++                            android:textSize="13sp" />
++
++                    </LinearLayout>
++
++                </LinearLayout>
++
++            </com.google.android.material.card.MaterialCardView>
+\ No newline at end of file
+diff --git a/app/src/test/java/com/example/neurohelp/auth/PhotoLimitsTest.kt b/app/src/test/java/com/example/neurohelp/auth/PhotoLimitsTest.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..85710b413a90543420bb70e721c2228e6d9bc3c4
+--- /dev/null
++++ b/app/src/test/java/com/example/neurohelp/auth/PhotoLimitsTest.kt
+@@ -0,0 +1,18 @@
++package com.example.neurohelp.auth
++
++import org.junit.Assert.*
++import org.junit.Test
++
++class PhotoLimitsTest {
++    @Test fun acceptsBytesWithinLimit() {
++        val bytes = ByteArray(128) { it.toByte() }
++        assertArrayEquals(bytes, bytes.inputStream().readBytesLimited(128))
++    }
++    @Test(expected = IllegalArgumentException::class)
++    fun rejectsBytesAboveLimit() {
++        ByteArray(129).inputStream().readBytesLimited(128)
++    }
++    @Test fun acceptsEmptyStreamForCallerValidation() {
++        assertEquals(0, ByteArray(0).inputStream().readBytesLimited(128).size)
++    }
++}
+diff --git a/docs/ATUALIZACAO_FOTOS.md b/docs/ATUALIZACAO_FOTOS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..c8654253f6af1189ca140f97d1d8c3765928cf89
+--- /dev/null
++++ b/docs/ATUALIZACAO_FOTOS.md
+@@ -0,0 +1,11 @@
++# Atualização de fotos e compatibilidade
++
++O contrato de cadastro/login existente foi preservado. O backend acrescenta `tipoPerfil: ADMIN` na sessão para administradores e `fotoPerfilUrl` opcional nas respostas de profissionais. A foto própria continua em `GET/PUT /api/conta/foto` com `{fotoPerfil: dataURL}`; a URL pública do profissional usa `GET /api/profissionais/{id}/foto`, retornando JPEG ou 404.
++
++O app ignora campos desconhecidos via leitura seletiva do JSONObject. Perfis sem `fotoPerfilUrl` recebem avatar padrão. Fotos são carregadas sem cache HTTP, limitadas no download, e o envio reduz a imagem para JPEG 256×256 antes da validação final no servidor. Nenhum token ou corpo de requisição/resposta é registrado em log.
++
++Compile com `./gradlew assembleDebug testDebugUnitTest assembleDebugAndroidTest`, SDK Android instalado e JDK compatível. Configure a API HTTPS por `-PESPECTROCARE_API_URL=https://sua-api`. Testes em aparelho/emulador: `./gradlew connectedDebugAndroidTest`.
++
++Homologue seleção de foto na aba Perfil para responsável/profissional, foto nos ícones das abas, recarga do perfil, logout/login, imagem adicionada pelo site e apresentação do profissional por ID real. A Aprendizagem continua abrindo o site no navegador; não envie JWT por URL e use o login do site para operações administrativas. Convites e gestão da Aprendizagem não receberam telas nativas adicionais.
++
++Cards e perfis agora usam dados reais da API. A API atual não define avaliações/modalidades: exemplos dessas informações deixam de aparecer como se fossem dados reais. O favorito do perfil conserva o estado local preexistente; não há persistência de favoritos/avaliações nesta entrega. Filtros demonstrativos continuam sem contrato de backend. Consulte `backend/docs/ADMINISTRACAO_E_FOTOS.md` no ZIP para migração, configuração e limitações completas.
