@@ -25,6 +25,11 @@ public class AprendizagemController {
         return service.listar();
     }
 
+    @GetMapping(value = "/{id}/imagem", produces = "image/jpeg")
+    public ResponseEntity<byte[]> imagem(@PathVariable Long id) {
+        return ResponseEntity.ok().header("Cache-Control", "no-store").body(service.imagem(id));
+    }
+
     @GetMapping("/{id}")
     public AprendizagemResponseDTO buscar(@PathVariable Long id) {
         return service.buscar(id);

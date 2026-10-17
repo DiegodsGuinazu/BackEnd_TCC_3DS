@@ -22,15 +22,17 @@ import java.util.Objects;
 @Transactional(readOnly = true)
 public class AprendizagemService {
     private final PostagemRepository repository;
+    private final ImagemPostagemService imagens;
 
-    public AprendizagemService(PostagemRepository repository) {
+    public AprendizagemService(PostagemRepository repository, ImagemPostagemService imagens) {
         this.repository = repository;
+        this.imagens = imagens;
     }
 
     public List<AprendizagemResumoResponseDTO> listar() {
         return repository.findByPublicadoAprendizagemTrueOrderByDataCriacaoDescIdDesc().stream()
                 .map(postagem -> new AprendizagemResumoResponseDTO(postagem.getId(), postagem.getTitulo(),
-                        postagem.getDataCriacao(), postagem.getDataAtualizacao(), categorias(postagem)))
+                        postagem.getDataCriacao(), postagem.getDataAtualizacao(), categorias(postagem), postagem.getResumo(), imagemUrl(postagem)))
                 .toList();
     }
 
@@ -38,11 +40,16 @@ public class AprendizagemService {
         Postagem postagem = repository.findByIdAndPublicadoAprendizagemTrue(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artigo não encontrado."));
         return new AprendizagemResponseDTO(postagem.getId(), postagem.getTitulo(), postagem.getConteudoHtml(),
-                postagem.getDataCriacao(), postagem.getDataAtualizacao(), categorias(postagem));
+                postagem.getDataCriacao(), postagem.getDataAtualizacao(), categorias(postagem),
+                postagem.getResumo(), postagem.getReferencias(), imagemUrl(postagem));
     }
 
     @Transactional @PreAuthorize("hasRole('ADMIN')")
     public AprendizagemResponseDTO criar(PostagemEdicaoDTO dto) {
+        if (dto.resumo() == null || dto.resumo().isBlank() || dto.referencias() == null
+                || dto.referencias().isBlank() || dto.imagemData() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe imagem, resumo e referências.");
+        }
         Postagem postagem = new Postagem();
         aplicar(postagem, dto);
         postagem.setDataCriacao(LocalDateTime.now());
@@ -79,9 +86,42 @@ public class AprendizagemService {
                 "p", "br", "strong", "em", "b", "i", "ul", "ol", "li", "h2", "h3", "h4", "blockquote"));
         if (Jsoup.parse(html).text().isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "O conteúdo deve conter texto.");
+        if (dto.resumo() != null) {
+            if (dto.resumo().isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o resumo.");
+            postagem.setResumo(dto.resumo().trim());
+        }
+        if (dto.referencias() != null) postagem.setReferencias(validarReferencias(dto.referencias()));
+        if (dto.imagemData() != null) postagem.setImagemData(imagens.normalizar(dto.imagemData()));
         postagem.setTitulo(dto.titulo().trim());
         postagem.setConteudoHtml(html);
         postagem.setDataAtualizacao(LocalDateTime.now());
+    }
+
+    private String imagemUrl(Postagem postagem) {
+        return postagem.getImagemData() == null ? null : "/api/aprendizagem/" + postagem.getId() + "/imagem";
+    }
+
+    public byte[] imagem(Long id) {
+        String data = publicada(id).getImagemData();
+        if (data == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Imagem não encontrada.");
+        return java.util.Base64.getDecoder().decode(data.substring(data.indexOf(',') + 1));
+    }
+
+    private String validarReferencias(String value) {
+        List<String> links = value.lines().map(String::trim).filter(s -> !s.isEmpty()).toList();
+        if (links.isEmpty() || links.size() > 20) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Informe de 1 a 20 referências, uma URL HTTP ou HTTPS por linha.");
+        for (String link : links) {
+            try {
+                var uri = java.net.URI.create(link);
+                if (!("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                        || uri.getHost() == null || uri.getUserInfo() != null || link.length() > 2000)
+                    throw new IllegalArgumentException();
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Referência inválida: use URLs HTTP ou HTTPS completas, sem credenciais.");
+            }
+        }
+        return String.join("\n", links);
     }
 
     private List<String> categorias(Postagem postagem) {

@@ -5,5 +5,5 @@ import java.util.List;
 
 public record AprendizagemResponseDTO(
         long id, String titulo, String conteudoHtml, LocalDateTime dataCriacao,
-        LocalDateTime dataAtualizacao, List<String> categorias) {
+        LocalDateTime dataAtualizacao, List<String> categorias, String resumo, String referencias, String imagemUrl) {
 }
