@@ -30,6 +30,16 @@ public class Postagem {
 
     private String titulo;
 
+    @Column(columnDefinition = "TEXT")
+    private String resumo;
+
+    @Column(columnDefinition = "TEXT")
+    private String referencias;
+
+    @Column(columnDefinition = "TEXT")
+    private String imagemData;
+
+
     // Apenas conteúdos selecionados pela equipe entram na API de Aprendizagem.
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean publicadoAprendizagem;

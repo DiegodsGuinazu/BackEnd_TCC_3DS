@@ -64,7 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login",
                                 "/cadastro/profissional", "/cadastro/responsavel",
                                 "/cadastro/admin", "/cadastro/admin/convite/validar").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/profissionais/*/foto").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/profissionais/*/foto", "/api/aprendizagem/*/imagem").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/aprendizagem", "/api/aprendizagem/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/aprendizagem", "/api/aprendizagem/**").hasRole("ADMIN")

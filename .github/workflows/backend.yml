@@ -53,8 +53,25 @@ jobs:
         env:
           POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
+          # create-drop remove o esquema ao terminar os testes. Reconstitui uma postagem
+          # anterior à migração para testar as novas colunas e a preservação de conteúdo.
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE postagem (id BIGINT PRIMARY KEY, titulo VARCHAR(255), conteudo_html TEXT);
+          INSERT INTO postagem VALUES (1, 'Postagem anterior', '<p>Conteúdo preservado</p>');
+          SQL
           docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-05-convites-admin.sql
           docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-05-convites-admin.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-17-postagens.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-17-postagens.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM postagem WHERE id = 1 AND titulo = 'Postagem anterior'
+                AND conteudo_html = '<p>Conteúdo preservado</p>' AND resumo IS NULL
+                AND referencias IS NULL AND imagem_data IS NULL) THEN
+              RAISE EXCEPTION 'A migração não preservou a postagem anterior';
+            END IF;
+          END $$;
+          SQL
       - name: Preservar relatórios
         if: always()
         uses: actions/upload-artifact@v4

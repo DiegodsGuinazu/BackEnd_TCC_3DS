@@ -132,7 +132,7 @@ class AdminIntegracaoTest {
     @Test void adminCriaEditaEExcluiPostagemComAnexosECategorias() throws Exception {
         var a = admin();
         mvc.perform(post("/api/aprendizagem").header("Authorization", bearer(a)).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"titulo\":\"Nova postagem\",\"conteudoHtml\":\"<p>Texto</p><script>alert(1)</script>\"}"))
+                .content(completa("{\"titulo\":\"Nova postagem\",\"conteudoHtml\":\"<p>Texto</p><script>alert(1)</script>\"}")))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.conteudoHtml").value("<p>Texto</p>"));
         var p = postagens.findAll().getFirst();
         Categoria cat = new Categoria(); cat.setNome("Categoria compartilhada"); em.persist(cat);
@@ -170,6 +170,79 @@ class AdminIntegracaoTest {
                 .andExpect(status().isBadRequest());
         for (String path : List.of("/api/perfil", "/api/perfil-responsavel", "/api/conta/foto")) {
             mvc.perform(get(path).header("Authorization", bearer(a))).andExpect(status().isForbidden());
+        }
+    }
+
+    String imagemTeste() throws Exception {
+        var output = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20,
+                java.awt.image.BufferedImage.TYPE_INT_RGB), "png", output);
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(output.toByteArray());
+    }
+    String completa(String json) throws Exception {
+        return json.substring(0, json.length() - 1) + ",\"resumo\":\"Resumo educativo\","
+                + "\"referencias\":\"https://example.org/fonte\",\"imagemData\":\"" + imagemTeste() + "\"}";
+    }
+
+    @Test void novaPostagemExigeImagemResumoEReferencias() throws Exception {
+        var auth = bearer(admin());
+        var minimal = "{\"titulo\":\"Teste\",\"conteudoHtml\":\"<p>Texto</p>\"}";
+        mvc.perform(post("/api/aprendizagem").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                .content(minimal)).andExpect(status().isBadRequest());
+        for (String campo : List.of("imagemData", "resumo", "referencias")) {
+            String payload = completa(minimal);
+            String valor = campo.equals("imagemData") ? imagemTeste() : campo.equals("resumo") ? "Resumo educativo" : "https://example.org/fonte";
+            payload = payload.replace("\"" + campo + "\":\"" + valor + "\"", "\"" + campo + "\":null");
+            mvc.perform(post("/api/aprendizagem").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                    .content(payload)).andExpect(status().isBadRequest());
+        }
+        assertEquals(0, postagens.count());
+    }
+
+    @Test void imagemResumoReferenciasPersistemEImagemPublicaNaoExpoeArtigo() throws Exception {
+        var auth = bearer(admin());
+        mvc.perform(post("/api/aprendizagem").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                .content(completa("{\"titulo\":\"Nova\",\"conteudoHtml\":\"<p>Conteúdo</p>\"}")))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.resumo").value("Resumo educativo"))
+                .andExpect(jsonPath("$.referencias").value("https://example.org/fonte"))
+                .andExpect(jsonPath("$.imagemData").doesNotExist());
+        var id = postagens.findAll().getFirst().getId(); em.flush(); em.clear();
+        mvc.perform(get("/api/aprendizagem")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].imagemUrl").value("/api/aprendizagem/" + id + "/imagem"))
+                .andExpect(jsonPath("$[0].referencias").doesNotExist());
+        var result = mvc.perform(get("/api/aprendizagem/" + id + "/imagem")).andExpect(status().isOk())
+                .andExpect(content().contentType("image/jpeg")).andExpect(header().string("Cache-Control", "no-store")).andReturn();
+        var image = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(result.getResponse().getContentAsByteArray()));
+        assertEquals(40, image.getWidth()); assertEquals(20, image.getHeight());
+        mvc.perform(get("/api/aprendizagem/" + id)).andExpect(status().isUnauthorized());
+        var saved = postagens.findById(id).orElseThrow().getImagemData();
+        mvc.perform(put("/api/aprendizagem/" + id).header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"titulo\":\"Editada\",\"conteudoHtml\":\"<p>Novo</p>\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.referencias").value("https://example.org/fonte"));
+        assertEquals(saved, postagens.findById(id).orElseThrow().getImagemData());
+        mvc.perform(delete("/api/aprendizagem/" + id).header("Authorization", auth)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/aprendizagem/" + id + "/imagem")).andExpect(status().isNotFound());
+    }
+
+    @Test void recusaReferenciasPerigosasEImagemInvalida() throws Exception {
+        var auth = bearer(admin());
+        String valid = completa("{\"titulo\":\"Nova\",\"conteudoHtml\":\"<p>Conteúdo</p>\"}");
+        for (String ref : List.of("javascript:alert(1)", "data:text/html,x", "/relativa", "https://user:senha@example.org")) {
+            mvc.perform(post("/api/aprendizagem").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                    .content(valid.replace("https://example.org/fonte", ref))).andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/aprendizagem").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                .content(valid.replace(imagemTeste(), "data:image/png;base64,aW52YWxpZA=="))).andExpect(status().isBadRequest());
+        assertEquals(0, postagens.count());
+    }
+
+    @Test void profissionalTambemNaoPodeCriarEditarOuExcluir() throws Exception {
+        UserProf profissional = new UserProf(); profissional.setNome("Profissional"); profissional.setEmail("prof@teste.invalid");
+        profissional.setSenha(encoder.encode("Senha@123")); profissional.setCpf("12345678901"); profissionais.saveAndFlush(profissional);
+        for (String method : List.of("POST", "PUT", "DELETE")) {
+            mvc.perform(request(org.springframework.http.HttpMethod.valueOf(method), method.equals("POST") ? "/api/aprendizagem" : "/api/aprendizagem/1")
+                    .header("Authorization", bearer(profissional)).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isForbidden());
         }
     }
 }
