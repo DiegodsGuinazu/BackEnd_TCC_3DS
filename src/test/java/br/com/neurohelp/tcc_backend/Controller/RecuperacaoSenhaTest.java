@@ -58,7 +58,7 @@ class RecuperacaoSenhaTest {
         String jwt = tokens.gerarToken(resp);
         String codigo = solicitar("RESP@TESTE.INVALID");
         redefinir(resp.getEmail(), codigo).andExpect(status().isOk());
-        assertTrue(encoder.matches("NovaSenha@123", responsaveis.findById(resp.getId()).orElseThrow().getSenha()));
+        assertTrue(encoder.matches("NovaSenha@123", responsaveis.findByEmail(resp.getEmail()).orElseThrow().getSenha()));
         redefinir(resp.getEmail(), codigo).andExpect(status().isBadRequest());
         mvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + jwt)).andExpect(status().isUnauthorized());
         mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
@@ -78,7 +78,7 @@ class RecuperacaoSenhaTest {
         prof.setCpf("52998224725"); prof.setSenha(encoder.encode("Anterior@123")); profissionais.saveAndFlush(prof);
         String jwt = tokens.gerarToken(prof);
         redefinir(prof.getEmail(), solicitar(prof.getEmail())).andExpect(status().isOk());
-        assertTrue(encoder.matches("NovaSenha@123", profissionais.findById(prof.getId()).orElseThrow().getSenha()));
+        assertTrue(encoder.matches("NovaSenha@123", profissionais.findByEmail(prof.getEmail()).orElseThrow().getSenha()));
         mvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + jwt)).andExpect(status().isUnauthorized());
     }
     @Test void codigoNaoPodeSerUsadoParaOutroEmail() throws Exception {

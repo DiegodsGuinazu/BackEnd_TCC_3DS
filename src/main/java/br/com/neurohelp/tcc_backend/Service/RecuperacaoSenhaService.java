@@ -39,8 +39,8 @@ public class RecuperacaoSenhaService {
         if (!emailService.configurado()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                 "Recuperação de senha indisponível no momento. Tente mais tarde.");
         String email = normalizar(entrada);
-        var profissional = profissionais.findByEmailIgnoreCase(email).orElse(null);
-        var responsavel = responsaveis.findByEmailIgnoreCase(email).orElse(null);
+        var profissional = profissionais.buscarParaRecuperacao(email).orElse(null);
+        var responsavel = responsaveis.buscarParaRecuperacao(email).orElse(null);
         // Não escolhe uma identidade arbitrária em cadastros legados ambíguos.
         if ((profissional == null) == (responsavel == null)) return;
         UsuarioAutenticavel usuario = profissional != null ? profissional : responsavel;
@@ -65,6 +65,10 @@ public class RecuperacaoSenhaService {
         if (novaSenha.getBytes(StandardCharsets.UTF_8).length > 72)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A senha deve ter no máximo 72 bytes.");
         String email = normalizar(entrada);
+        // Mesma ordem de bloqueios usada na solicitação: conta, depois código.
+        var profissional = profissionais.buscarParaRecuperacao(email).orElse(null);
+        var responsavel = responsaveis.buscarParaRecuperacao(email).orElse(null);
+        if ((profissional == null) == (responsavel == null)) return false;
         var registro = recuperacoes.buscarComBloqueio(email).orElse(null);
         if (registro == null || registro.isUsado() || registro.getTentativas() >= 5
                 || !registro.getExpiraEm().isAfter(Instant.now())) return false;
@@ -72,12 +76,12 @@ public class RecuperacaoSenhaService {
         if (!MessageDigest.isEqual(registro.getCodigoHash().getBytes(StandardCharsets.UTF_8),
                 hash(email, codigo).getBytes(StandardCharsets.UTF_8))) return false;
         if ("PROFISSIONAL".equals(registro.getTipoPerfil())) {
-            var usuario = profissionais.findByEmailIgnoreCase(email).orElse(null);
+            var usuario = profissional;
             if (usuario == null || usuario.getId() != registro.getUsuarioId()
                     || usuario.getTokenVersion() != registro.getTokenVersion()) return false;
             usuario.setSenha(encoder.encode(novaSenha)); usuario.setTokenVersion(usuario.getTokenVersion() + 1);
         } else {
-            var usuario = responsaveis.findByEmailIgnoreCase(email).orElse(null);
+            var usuario = responsavel;
             if (usuario == null || usuario.getId() != registro.getUsuarioId()
                     || usuario.getTokenVersion() != registro.getTokenVersion()) return false;
             usuario.setSenha(encoder.encode(novaSenha)); usuario.setTokenVersion(usuario.getTokenVersion() + 1);

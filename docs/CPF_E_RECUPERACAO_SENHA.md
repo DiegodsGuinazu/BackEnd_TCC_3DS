@@ -40,7 +40,7 @@ Senha: mínimo de 8 caracteres, maiúscula, minúscula, número e símbolo; até
 - Java 21: `bash gradlew test bootJar`.
 - Docker: `docker build -t tcc-backend .`.
 - A CI existente executa H2, PostgreSQL e build Docker em PRs para `main`.
-- Testes novos cobrem os dois perfis, CPF inválido, destinatário fixo, expiração, cinco tentativas, prazo de reenvio, troca de código, uso único, conta ausente, senha fraca, falta de configuração, entrega somente após commit, rollback e revogação de JWT.
+- Testes novos cobrem os dois perfis, CPF inválido, destinatário fixo, expiração, cinco tentativas, prazo de reenvio, troca de código, uso único, conta ausente, senha fraca, falta de configuração, entrega somente após commit, rollback, pedidos simultâneos, uso único concorrente e revogação de JWT.
 - Teste manual: solicitar código no perfil, conferir o destinatário, sair e recuperar pelo login, trocar senha, conferir rejeição da senha antiga e da sessão antiga no outro cliente. Repetir para ambos os perfis. Solicitar código antes da troca e tentar reutilizá-lo depois: deve falhar.
 - As fixtures antigas que aceitavam CPF com dígitos incorretos foram substituídas por exemplos matematicamente válidos.
 
