@@ -32,6 +32,10 @@ public class UserProf implements UsuarioAutenticavel {
     @Column(nullable = false)
     private String senha;
 
+    // DEFAULT permite atualizar tabelas existentes sem invalidar contas antigas.
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long versaoCredenciais;
+
     @Column(unique = true, nullable = false)
     private String cpf;
 

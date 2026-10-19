@@ -22,6 +22,10 @@ public class UserAdmin implements UsuarioAutenticavel {
     @JsonIgnore @Column(nullable = false)
     private String senha;
 
+    // DEFAULT permite atualizar tabelas existentes sem invalidar contas antigas.
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long versaoCredenciais;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));

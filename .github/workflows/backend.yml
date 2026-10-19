@@ -72,6 +72,27 @@ jobs:
             END IF;
           END $$;
           SQL
+      - name: Validar migração de recuperação em contas existentes
+        if: matrix.banco == 'postgres'
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE user_prof (id BIGINT PRIMARY KEY, email VARCHAR(254));
+          CREATE TABLE user_resp (id BIGINT PRIMARY KEY, email VARCHAR(254));
+          INSERT INTO user_prof VALUES (1, 'prof@teste.invalid');
+          INSERT INTO user_resp VALUES (1, 'resp@teste.invalid');
+          SQL
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-19-cpf-recuperacao-senha.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-19-cpf-recuperacao-senha.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM user_prof WHERE email = 'prof@teste.invalid' AND versao_credenciais = 0)
+               OR NOT EXISTS (SELECT 1 FROM user_resp WHERE email = 'resp@teste.invalid' AND versao_credenciais = 0) THEN
+              RAISE EXCEPTION 'A migração não preservou as contas';
+            END IF;
+          END $$;
+          SQL
       - name: Preservar relatórios
         if: always()
         uses: actions/upload-artifact@v4

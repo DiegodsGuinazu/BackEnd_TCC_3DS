@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
+import br.com.neurohelp.tcc_backend.Service.CpfValidator;
 import java.util.regex.Pattern;
 
 @RestController
@@ -39,6 +40,12 @@ public class CadastroController {
 
     @PostMapping("/profissional")
     public ResponseEntity<?> cadastrarProfissional(@Valid @RequestBody CadastroProfissionalDTO dto) {
+        if (dto.cpf() != null && !dto.cpf().isBlank() && !CpfValidator.valido(dto.cpf())) {
+            return ResponseEntity.badRequest().body("CPF inválido. Confira o número informado.");
+        }
+        if (dto.senha().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            return ResponseEntity.badRequest().body("A senha deve ocupar no máximo 72 bytes.");
+        }
         String email = normalizarEmail(dto.email());
         if (!emailValido(email)) {
             return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
@@ -65,6 +72,12 @@ public class CadastroController {
 
     @PostMapping("/responsavel")
     public ResponseEntity<?> cadastrarResponsavel(@Valid @RequestBody CadastroResponsavelDTO dto) {
+        if (dto.cpf() != null && !dto.cpf().isBlank() && !CpfValidator.valido(dto.cpf())) {
+            return ResponseEntity.badRequest().body("CPF inválido. Confira o número informado.");
+        }
+        if (dto.senha().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            return ResponseEntity.badRequest().body("A senha deve ocupar no máximo 72 bytes.");
+        }
         String email = normalizarEmail(dto.email());
         if (!emailValido(email)) {
             return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
