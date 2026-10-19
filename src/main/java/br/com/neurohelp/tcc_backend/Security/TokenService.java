@@ -33,6 +33,7 @@ public class TokenService {
                 .withIssuer("API EspectroCare")
                 .withSubject(usuario.getEmail())
                 .withClaim("tipoPerfil", tipoPerfil)
+                .withClaim("tokenVersion", usuario.getTokenVersion())
                 .withExpiresAt(gerarDataExpiracao())
                 .sign(algoritmo);
     }

@@ -32,6 +32,15 @@ public class UserProf implements UsuarioAutenticavel {
     @Column(nullable = false)
     private String senha;
 
+    @JsonIgnore
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int tokenVersion;
+
+    @JsonIgnore
+    @Version
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long rowVersion;
+
     @Column(unique = true, nullable = false)
     private String cpf;
 

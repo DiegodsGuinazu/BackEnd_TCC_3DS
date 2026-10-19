@@ -39,6 +39,10 @@ public class CadastroController {
 
     @PostMapping("/profissional")
     public ResponseEntity<?> cadastrarProfissional(@Valid @RequestBody CadastroProfissionalDTO dto) {
+        if (dto.cpf() != null && !dto.cpf().isBlank()
+                && !br.com.neurohelp.tcc_backend.Validation.Cpf.valido(dto.cpf())) {
+            return ResponseEntity.badRequest().body("CPF inválido. Confira os números informados.");
+        }
         String email = normalizarEmail(dto.email());
         if (!emailValido(email)) {
             return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");
@@ -65,6 +69,10 @@ public class CadastroController {
 
     @PostMapping("/responsavel")
     public ResponseEntity<?> cadastrarResponsavel(@Valid @RequestBody CadastroResponsavelDTO dto) {
+        if (dto.cpf() != null && !dto.cpf().isBlank()
+                && !br.com.neurohelp.tcc_backend.Validation.Cpf.valido(dto.cpf())) {
+            return ResponseEntity.badRequest().body("CPF inválido. Confira os números informados.");
+        }
         String email = normalizarEmail(dto.email());
         if (!emailValido(email)) {
             return ResponseEntity.badRequest().body("Dados de cadastro inválidos.");

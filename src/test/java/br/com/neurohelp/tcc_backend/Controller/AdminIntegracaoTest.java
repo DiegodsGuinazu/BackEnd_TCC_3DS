@@ -101,7 +101,7 @@ class AdminIntegracaoTest {
     @Test void publicoNaoCriaAdminComRoleForjado() throws Exception {
         for (String perfil : List.of("responsavel", "profissional")) {
             mvc.perform(post("/cadastro/" + perfil).contentType(MediaType.APPLICATION_JSON).content("""
-                    {"nome":"Comum","email":"%s@teste.invalid","senha":"Senha@123","cpf":"12345678901","role":"ADMIN","tipoPerfil":"ADMIN"}
+                    {"nome":"Comum","email":"%s@teste.invalid","senha":"Senha@123","cpf":"52998224725","role":"ADMIN","tipoPerfil":"ADMIN"}
                     """.formatted(perfil))).andExpect(status().isOk());
         }
         assertEquals(0, admins.count());
@@ -238,7 +238,7 @@ class AdminIntegracaoTest {
 
     @Test void profissionalTambemNaoPodeCriarEditarOuExcluir() throws Exception {
         UserProf profissional = new UserProf(); profissional.setNome("Profissional"); profissional.setEmail("prof@teste.invalid");
-        profissional.setSenha(encoder.encode("Senha@123")); profissional.setCpf("12345678901"); profissionais.saveAndFlush(profissional);
+        profissional.setSenha(encoder.encode("Senha@123")); profissional.setCpf("52998224725"); profissionais.saveAndFlush(profissional);
         for (String method : List.of("POST", "PUT", "DELETE")) {
             mvc.perform(request(org.springframework.http.HttpMethod.valueOf(method), method.equals("POST") ? "/api/aprendizagem" : "/api/aprendizagem/1")
                     .header("Authorization", bearer(profissional)).contentType(MediaType.APPLICATION_JSON).content("{}"))

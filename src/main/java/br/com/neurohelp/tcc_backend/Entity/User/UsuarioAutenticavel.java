@@ -7,6 +7,7 @@ import java.util.Collection;
 public interface UsuarioAutenticavel {
     String getEmail();
     String getSenha();
+    default int getTokenVersion() { return 0; }
 
     Collection<? extends GrantedAuthority> getAuthorities();
 }

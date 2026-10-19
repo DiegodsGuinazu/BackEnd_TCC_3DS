@@ -55,7 +55,8 @@ public class SecurityFilter extends OncePerRequestFilter {
             var token = tokenService.validarTokenDecodificado(tokenJWT);
             if (token.isPresent()) {
                 UsuarioAutenticavel usuario = recuperarUsuario(token.get());
-                if (usuario != null) {
+                Integer versao = token.get().getClaim("tokenVersion").asInt();
+                if (usuario != null && usuario.getTokenVersion() == (versao == null ? 0 : versao)) {
                     var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
