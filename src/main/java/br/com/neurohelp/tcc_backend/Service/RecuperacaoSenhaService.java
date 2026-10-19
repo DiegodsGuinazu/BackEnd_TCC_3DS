@@ -50,7 +50,9 @@ public class RecuperacaoSenhaService {
         // Não permite renovar o orçamento de tentativas enquanto o código estiver ativo.
         if (registro != null && registro.getSolicitadoEm().plus(Duration.ofMinutes(15)).isAfter(agora)) return;
         if (registro == null) { registro = new RecuperacaoSenha(); registro.setEmail(email); }
-        String codigo = String.format(Locale.ROOT, "%08d", random.nextInt(100_000_000));
+        String codigo;
+        do { codigo = String.format(Locale.ROOT, "%08d", random.nextInt(100_000_000)); }
+        while (hash(email, codigo).equals(registro.getCodigoHash()));
         registro.setCodigoHash(hash(email, codigo));
         registro.setSolicitadoEm(agora); registro.setExpiraEm(agora.plus(Duration.ofMinutes(15)));
         registro.setTentativas(0); registro.setUsado(false); registro.setTokenVersion(usuario.getTokenVersion());

@@ -14,4 +14,3 @@ public interface responsavelRepository extends JpaRepository<UserResp, Long> {
     @org.springframework.data.jpa.repository.Query("select u from UserResp u where lower(u.email) = lower(:email)")
     Optional<UserResp> buscarParaRecuperacao(@org.springframework.data.repository.query.Param("email") String email);
 }
-

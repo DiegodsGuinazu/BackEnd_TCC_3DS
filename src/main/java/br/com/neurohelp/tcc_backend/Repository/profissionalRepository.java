@@ -14,4 +14,3 @@ public interface profissionalRepository extends JpaRepository<UserProf, Long> {
     @org.springframework.data.jpa.repository.Query("select u from UserProf u where lower(u.email) = lower(:email)")
     Optional<UserProf> buscarParaRecuperacao(@org.springframework.data.repository.query.Param("email") String email);
 }
-
