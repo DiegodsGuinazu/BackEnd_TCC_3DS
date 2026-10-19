@@ -1,6 +1,10 @@
 # CPF e recuperação de senha — 19/10/2026
 
-## Configuração e implantação
+## Envio sem domínio próprio: Gmail
+
+Para usar `espectrocare@gmail.com` pela Gmail API, siga [GMAIL_RECUPERACAO_SENHA.md](GMAIL_RECUPERACAO_SENHA.md). A seleção usa `EMAIL_PROVIDER=gmail` e as credenciais OAuth da conta remetente, somente no backend. Rotas e estrutura do banco do PR #7 permanecem as mesmas. O modo padrão continua `resend` para preservar configurações anteriores.
+
+## Configuração e implantação com Resend
 
 1. Aplique primeiro o PR do backend. O login e os cadastros mantêm os caminhos e campos existentes.
 2. Faça um backup do PostgreSQL. Execute `docs/sql/2026-10-19-cpf-recuperacao-senha.sql` no banco do projeto (DBeaver ou console SQL do Neon). O script pode ser repetido. Com `ddl-auto=update`, Hibernate também cria a estrutura; o script permite revisar a mudança antes do deploy.

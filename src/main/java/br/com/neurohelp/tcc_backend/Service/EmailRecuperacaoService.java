@@ -9,22 +9,35 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import java.util.List;
 import java.util.Map;
 
-/** API HTTPS da Resend; nenhuma credencial fica no site ou no aplicativo. */
+/** Seleção explícita do provedor HTTPS; mantém o contrato usado pela recuperação. */
 @Service
 public class EmailRecuperacaoService {
     private final String apiKey;
     private final String remetente;
     private final RestClient client;
+    private final String provedor;
+    private final GmailRecuperacaoService gmail;
     public EmailRecuperacaoService(@Value("${app.email.resend-api-key:}") String apiKey,
-                                   @Value("${app.email.from:}") String remetente) {
+                                   @Value("${app.email.from:}") String remetente,
+                                   @Value("${app.email.provider:resend}") String provedor,
+                                   GmailRecuperacaoService gmail) {
         this.apiKey = apiKey; this.remetente = remetente;
+        this.provedor = provedor.trim().toLowerCase(java.util.Locale.ROOT); this.gmail = gmail;
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10)).followRedirects(HttpClient.Redirect.NEVER).build());
         factory.setReadTimeout(Duration.ofSeconds(15));
         client = RestClient.builder().baseUrl("https://api.resend.com").requestFactory(factory).build();
     }
-    public boolean configurado() { return !apiKey.isBlank() && !remetente.isBlank(); }
+    public boolean configurado() {
+        return switch (provedor) {
+            case "gmail" -> gmail.configurado();
+            case "resend" -> !apiKey.isBlank() && !remetente.isBlank();
+            default -> false;
+        };
+    }
     public void enviar(String destinatario, String codigo) {
+        if (!configurado()) throw new IllegalStateException("Provedor de e-mail não configurado.");
+        if ("gmail".equals(provedor)) { gmail.enviar(destinatario, codigo); return; }
         client.post().uri("/emails").header("Authorization", "Bearer " + apiKey)
                 .body(Map.of("from", remetente, "to", List.of(destinatario),
                         "subject", "EspectroCare — redefinição de senha",
