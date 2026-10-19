@@ -40,7 +40,7 @@ class GmailRecuperacaoServiceTest {
                 .andExpect(header("Authorization", "Bearer " + token))
                 .andExpect(request -> {
                     String body = ((MockClientHttpRequest) request).getBodyAsString();
-                    String raw = new JsonMapper().readTree(body).get("raw").asText();
+                    String raw = new JsonMapper().readTree(body).get("raw").asString();
                     assertFalse(raw.contains("="));
                     String mime = new String(Base64.getUrlDecoder().decode(raw), StandardCharsets.UTF_8);
                     assertTrue(mime.startsWith("From: EspectroCare <espectrocare@gmail.com>\r\nTo: <pessoa@teste.invalid>\r\n"));
