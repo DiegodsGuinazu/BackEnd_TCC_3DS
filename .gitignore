@@ -35,3 +35,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Credenciais locais de envio de e-mail (nunca versionar).
+.secrets/
+.env
+.env.*
+!.env.example
+client_secret*.json
+gmail-render*.env
+
+# Arquivos temporários dos testes Python do bootstrap Gmail.
+__pycache__/
+*.py[cod]
