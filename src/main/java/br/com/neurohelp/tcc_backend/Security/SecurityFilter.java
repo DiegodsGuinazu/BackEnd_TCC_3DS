@@ -55,7 +55,10 @@ public class SecurityFilter extends OncePerRequestFilter {
             var token = tokenService.validarTokenDecodificado(tokenJWT);
             if (token.isPresent()) {
                 UsuarioAutenticavel usuario = recuperarUsuario(token.get());
-                if (usuario != null) {
+                Long versaoToken = token.get().getClaim("versaoCredenciais").asLong();
+                // JWT anterior à funcionalidade vale somente enquanto a senha nunca foi redefinida.
+                long versao = versaoToken == null ? 0 : versaoToken;
+                if (usuario != null && usuario.getVersaoCredenciais() == versao) {
                     var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

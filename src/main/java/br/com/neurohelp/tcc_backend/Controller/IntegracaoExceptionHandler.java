@@ -10,7 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 @RestControllerAdvice(assignableTypes = {ConviteAdminController.class, AprendizagemController.class,
-        FotoPerfilController.class})
+        FotoPerfilController.class,
+        br.com.neurohelp.tcc_backend.Controller.Settings.RecuperacaoSenhaController.class,
+        br.com.neurohelp.tcc_backend.Controller.Settings.CpfController.class})
 public class IntegracaoExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<?> esperado(ResponseStatusException e) {

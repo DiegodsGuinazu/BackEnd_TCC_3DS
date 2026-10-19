@@ -262,10 +262,10 @@ class AreasProtegidasTest {
     @Test
     void cadastrosContinuamPublicosELoginDoResponsavelGeraToken() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Novo profissional\",\"email\":\"novo-prof@teste.invalid\",\"cpf\":\"44444444444\",\"senha\":\"Senha@123\"}"))
+                .content("{\"nome\":\"Novo profissional\",\"email\":\"novo-prof@teste.invalid\",\"cpf\":\"52998224725\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Novo responsável\",\"email\":\"novo-resp@teste.invalid\",\"cpf\":\"55555555555\",\"senha\":\"Senha@123\"}"))
+                .content("{\"nome\":\"Novo responsável\",\"email\":\"novo-resp@teste.invalid\",\"cpf\":\"11144477735\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"novo-resp@teste.invalid\",\"senha\":\"Senha@123\"}"))
@@ -277,7 +277,7 @@ class AreasProtegidasTest {
     void cadastroNaoPodeSobrescreverContaExistentePorId() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\":" + profissional.getId() + ",\"nome\":\"Outra conta\","
-                        + "\"email\":\"outra@teste.invalid\",\"cpf\":\"66666666666\",\"senha\":\"Outra@123\"}"))
+                        + "\"email\":\"outra@teste.invalid\",\"cpf\":\"12345678909\",\"senha\":\"Outra@123\"}"))
                 .andExpect(status().isOk());
         assertEquals(2, profissionais.count());
         assertEquals("profissional@teste.invalid", profissionais.findByEmail("profissional@teste.invalid").orElseThrow().getEmail());
@@ -293,7 +293,7 @@ class AreasProtegidasTest {
     @Test
     void cadastroRejeitaEmailJaExistenteNoOutroTipoDePerfil() throws Exception {
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Outra conta\",\"email\":\"profissional@teste.invalid\",\"cpf\":\"77777777777\",\"senha\":\"Senha@123\"}"))
+                .content("{\"nome\":\"Outra conta\",\"email\":\"profissional@teste.invalid\",\"cpf\":\"93541134780\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isConflict());
         assertEquals(1, responsaveis.count());
     }
@@ -370,13 +370,13 @@ class AreasProtegidasTest {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"nome":"Profissional","email":"PROF-NORMALIZA@TESTE.INVALID ","senha":"Senha@123",
-                         "cpf":"123.456.789-00","telefone":"(11) 3456-7890","estado":" São Paulo ",
+                         "cpf":"123.456.789-09","telefone":"(11) 3456-7890","estado":" São Paulo ",
                          "cidade":" Campinas ","formacao":" Psicologia "}
                         """))
                 .andExpect(status().isOk());
 
         UserProf salvo = profissionais.findByEmail("prof-normaliza@teste.invalid").orElseThrow();
-        assertEquals("12345678900", salvo.getCpf());
+        assertEquals("12345678909", salvo.getCpf());
         assertEquals("1134567890", salvo.getTelefone());
         assertEquals("São Paulo", salvo.getEstado());
         assertEquals("Campinas", salvo.getCidade());

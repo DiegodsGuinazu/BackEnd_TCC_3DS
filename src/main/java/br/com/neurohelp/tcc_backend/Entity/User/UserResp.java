@@ -39,6 +39,10 @@ public class UserResp implements UsuarioAutenticavel {
     @Column(nullable = false)
     private String senha;
 
+    // DEFAULT permite atualizar tabelas existentes sem invalidar contas antigas.
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long versaoCredenciais;
+
     @Override
     public String getEmail() {
         return email;

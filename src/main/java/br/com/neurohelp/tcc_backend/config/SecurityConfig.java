@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Libera todas as requisições OPTIONS do navegador (CORS Preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login",
+                        .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/esqueci-senha", "/auth/redefinir-senha", "/validacoes/cpf",
                                 "/cadastro/profissional", "/cadastro/responsavel",
                                 "/cadastro/admin", "/cadastro/admin/convite/validar").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/profissionais/*/foto", "/api/aprendizagem/*/imagem").permitAll()
@@ -79,7 +79,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/perfil-responsavel", "/api/perfil-responsavel/**")
                         .access((authentication, context) -> new AuthorizationDecision(
                                 authentication.get().getPrincipal() instanceof UserResp))
-                        .requestMatchers("/api/conta/foto", "/usuarios/**")
+                        .requestMatchers("/api/conta/foto", "/api/conta/recuperacao-senha", "/usuarios/**")
                         .access((authentication, context) -> new AuthorizationDecision(
                                 authentication.get().getPrincipal() instanceof UserResp
                                 || authentication.get().getPrincipal() instanceof UserProf))
