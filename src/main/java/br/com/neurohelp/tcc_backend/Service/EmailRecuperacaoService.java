@@ -3,6 +3,8 @@ package br.com.neurohelp.tcc_backend.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.net.http.HttpClient;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -12,6 +14,7 @@ import java.util.Map;
 /** Seleção explícita do provedor HTTPS; mantém o contrato usado pela recuperação. */
 @Service
 public class EmailRecuperacaoService {
+    private static final Logger log = LoggerFactory.getLogger(EmailRecuperacaoService.class);
     private final String apiKey;
     private final String remetente;
     private final RestClient client;
@@ -27,6 +30,8 @@ public class EmailRecuperacaoService {
                 .connectTimeout(Duration.ofSeconds(10)).followRedirects(HttpClient.Redirect.NEVER).build());
         factory.setReadTimeout(Duration.ofSeconds(15));
         client = RestClient.builder().baseUrl("https://api.resend.com").requestFactory(factory).build();
+        String nomeSeguro = List.of("gmail", "resend").contains(this.provedor) ? this.provedor : "desconhecido";
+        log.info("Recuperação de senha: provedor={}, configurado={}.", nomeSeguro, configurado());
     }
     public boolean configurado() {
         return switch (provedor) {

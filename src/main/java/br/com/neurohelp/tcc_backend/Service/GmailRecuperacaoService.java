@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -15,11 +19,23 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Gmail API por HTTPS; OAuth é autorizado uma vez pelo operador em sua máquina. */
 @Service
 public class GmailRecuperacaoService {
+    private static final Logger log = LoggerFactory.getLogger(GmailRecuperacaoService.class);
+    private static final JsonMapper json = new JsonMapper();
+    // Somente códigos conhecidos entram no log; mensagens e corpos do Google podem conter dados privados.
+    private static final Set<String> MOTIVOS_PUBLICOS = Set.of(
+            "invalid_grant", "invalid_client", "unauthorized_client", "invalid_scope", "invalid_request",
+            "access_denied", "authError", "insufficientPermissions", "accessNotConfigured", "serviceDisabled",
+            "dailyLimitExceeded", "rateLimitExceeded", "userRateLimitExceeded", "domainPolicy",
+            "badRequest", "backendError", "failedPrecondition", "forbidden",
+            "SERVICE_DISABLED", "ACCESS_TOKEN_SCOPE_INSUFFICIENT", "PERMISSION_DENIED",
+            "UNAUTHENTICATED", "RESOURCE_EXHAUSTED", "FAILED_PRECONDITION");
     static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     static final String SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
     private static final Pattern ENDERECO = Pattern.compile("[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?");
@@ -59,16 +75,44 @@ public class GmailRecuperacaoService {
         if (destinatario == null || destinatario.length() > 254 || !ENDERECO.matcher(destinatario).matches()
                 || codigo == null || !codigo.matches("[0-9]{8}"))
             throw new IllegalArgumentException("Dados de envio inválidos.");
+        String etapa = "autorizacao";
         try {
             String token = obterAccessToken();
+            etapa = "envio";
             client.post().uri(SEND_URL).headers(h -> h.setBearerAuth(token))
                     .contentType(MediaType.APPLICATION_JSON).body(Map.of("raw", mensagem(destinatario, codigo)))
                     .retrieve().toBodilessEntity();
         } catch (Exception e) {
             if (e instanceof RestClientResponseException http && http.getStatusCode().value() == 401) invalidarToken();
+            int status = e instanceof RestClientResponseException http ? http.getStatusCode().value() : 0;
+            log.warn("Falha Gmail na recuperação: etapa={}, http={}, motivo={}.", etapa, status, motivoSeguro(e));
             // Exceções HTTP podem conter corpo, tokens ou mensagens do provedor. Não propagar a causa.
             throw new IllegalStateException("Falha no envio Gmail. Verifique a autorização e os limites da conta.");
         }
+    }
+    private static String motivoSeguro(Exception erro) {
+        if (erro instanceof ResourceAccessException) return "falha_conexao";
+        if (!(erro instanceof RestClientResponseException http)) return "resposta_inesperada";
+        byte[] corpo = http.getResponseBodyAsByteArray();
+        if (corpo.length == 0 || corpo.length > 16384) return "nao_identificado";
+        try {
+            var resposta = json.readValue(corpo, Map.class);
+            Object valor = resposta.get("error");
+            if (valor instanceof String codigo && MOTIVOS_PUBLICOS.contains(codigo)) return codigo;
+            if (valor instanceof Map<?, ?> detalhe) {
+                // ErrorInfo identifica API desativada e escopo insuficiente de forma mais precisa.
+                for (String campo : List.of("details", "errors")) {
+                    if (detalhe.get(campo) instanceof List<?> itens) {
+                        for (Object item : itens) {
+                            if (item instanceof Map<?, ?> registro && registro.get("reason") instanceof String codigo
+                                    && MOTIVOS_PUBLICOS.contains(codigo)) return codigo;
+                        }
+                    }
+                }
+                if (detalhe.get("status") instanceof String codigo && MOTIVOS_PUBLICOS.contains(codigo)) return codigo;
+            }
+        } catch (Exception ignorada) { /* Não registrar corpo nem exceção do parser. */ }
+        return "nao_identificado";
     }
     private synchronized String obterAccessToken() {
         if (accessToken != null && clock.instant().isBefore(renovarEm)) return accessToken;
