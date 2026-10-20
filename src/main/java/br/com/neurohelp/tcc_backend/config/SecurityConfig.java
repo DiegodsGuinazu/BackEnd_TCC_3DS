@@ -62,7 +62,7 @@ public class SecurityConfig {
                         // Libera todas as requisições OPTIONS do navegador (CORS Preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/esqueci-senha", "/auth/redefinir-senha", "/validacoes/cpf",
-                                "/cadastro/profissional", "/cadastro/responsavel",
+                                "/cadastro/profissional", "/cadastro/responsavel", "/cadastro/email/solicitar",
                                 "/cadastro/admin", "/cadastro/admin/convite/validar").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/profissionais/*/foto", "/api/aprendizagem/*/imagem").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

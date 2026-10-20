@@ -35,6 +35,7 @@ class AdminIntegracaoTest {
     @Autowired TokenService tokens;
     @Autowired PasswordEncoder encoder;
     @Autowired EntityManager em;
+    @org.springframework.beans.factory.annotation.Value("${api.security.token.secret}") String secret;
 
     String token(ConviteAdminService.ConviteGerado c) { return c.link().split("#token=")[1]; }
     String corpo(String token, String email) { return """
@@ -100,8 +101,9 @@ class AdminIntegracaoTest {
 
     @Test void publicoNaoCriaAdminComRoleForjado() throws Exception {
         for (String perfil : List.of("responsavel", "profissional")) {
+            ConfirmacaoEmailFixture.criar(em, secret, perfil + "@teste.invalid");
             mvc.perform(post("/cadastro/" + perfil).contentType(MediaType.APPLICATION_JSON).content("""
-                    {"nome":"Comum","email":"%s@teste.invalid","senha":"Senha@123","cpf":"52998224725","role":"ADMIN","tipoPerfil":"ADMIN"}
+                    {"nome":"Comum","email":"%s@teste.invalid","senha":"Senha@123","cpf":"52998224725","role":"ADMIN","tipoPerfil":"ADMIN","codigoEmail":"12345678"}
                     """.formatted(perfil))).andExpect(status().isOk());
         }
         assertEquals(0, admins.count());

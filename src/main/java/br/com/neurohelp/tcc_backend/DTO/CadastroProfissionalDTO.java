@@ -28,6 +28,7 @@ public record CadastroProfissionalDTO(
         @Size(max = 120) String cidade,
         @Size(max = 160) String formacao,
         @Size(max = 2000) String bio,
-        @Size(max = 80) String numRegistro
+        @Size(max = 80) String numRegistro,
+        @Size(max = 8) String codigoEmail
 ) {
 }

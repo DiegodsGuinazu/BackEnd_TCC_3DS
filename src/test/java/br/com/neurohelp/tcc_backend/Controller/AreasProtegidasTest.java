@@ -56,6 +56,8 @@ class AreasProtegidasTest {
 
     @BeforeEach
     void prepararDados() {
+        for (String email : new String[]{"novo-prof@teste.invalid", "novo-resp@teste.invalid", "outra@teste.invalid", "semcpf@teste.invalid", "resp-null-1@teste.invalid", "resp-null-2@teste.invalid", "prof-normaliza@teste.invalid"})
+            ConfirmacaoEmailFixture.criar(entityManager, secret, email);
         profissional = new UserProf();
         profissional.setNome("Profissional de teste");
         profissional.setEmail("profissional@teste.invalid");
@@ -262,13 +264,13 @@ class AreasProtegidasTest {
     @Test
     void cadastrosContinuamPublicosELoginDoResponsavelGeraToken() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Novo profissional\",\"email\":\"novo-prof@teste.invalid\",\"cpf\":\"52998224725\",\"senha\":\"Senha@123\"}"))
+                .content("{\"nome\":\"Novo profissional\",\"codigoEmail\":\"12345678\",\"email\":\"novo-prof@teste.invalid\",\"cpf\":\"52998224725\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Novo responsável\",\"email\":\"novo-resp@teste.invalid\",\"cpf\":\"11144477735\",\"senha\":\"Senha@123\"}"))
+                .content("{\"nome\":\"Novo responsável\",\"codigoEmail\":\"12345678\",\"email\":\"novo-resp@teste.invalid\",\"cpf\":\"11144477735\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"novo-resp@teste.invalid\",\"senha\":\"Senha@123\"}"))
+                .content("{\"codigoEmail\":\"12345678\",\"email\":\"novo-resp@teste.invalid\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.token", not(emptyString())))
                 .andExpect(jsonPath("$.email").value("novo-resp@teste.invalid"));
     }
@@ -277,7 +279,7 @@ class AreasProtegidasTest {
     void cadastroNaoPodeSobrescreverContaExistentePorId() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\":" + profissional.getId() + ",\"nome\":\"Outra conta\","
-                        + "\"email\":\"outra@teste.invalid\",\"cpf\":\"12345678909\",\"senha\":\"Outra@123\"}"))
+                        + "\"codigoEmail\":\"12345678\",\"email\":\"outra@teste.invalid\",\"cpf\":\"12345678909\",\"senha\":\"Outra@123\"}"))
                 .andExpect(status().isOk());
         assertEquals(2, profissionais.count());
         assertEquals("profissional@teste.invalid", profissionais.findByEmail("profissional@teste.invalid").orElseThrow().getEmail());
@@ -341,7 +343,7 @@ class AreasProtegidasTest {
     void responsavelPodeCadastrarSemCpfEComDadosNormalizados() throws Exception {
         mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nome":"Sem CPF","email":"semcpf@teste.invalid","senha":"Senha@123",
+                        {"nome":"Sem CPF","codigoEmail":"12345678","email":"semcpf@teste.invalid","senha":"Senha@123",
                          "cpf":null,"telefone":"(11) 98765-4321","cidade":"São Paulo"}
                         """))
                 .andExpect(status().isOk());
@@ -357,7 +359,7 @@ class AreasProtegidasTest {
         for (int i = 1; i <= 2; i++) {
             mvc.perform(post("/cadastro/responsavel").contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                            {"nome":"Resp %d","email":"resp-null-%d@teste.invalid","senha":"Senha@123","cpf":null}
+                            {"nome":"Resp %d","codigoEmail":"12345678","email":"resp-null-%d@teste.invalid","senha":"Senha@123","cpf":null}
                             """.formatted(i, i)))
                     .andExpect(status().isOk());
         }
@@ -369,7 +371,7 @@ class AreasProtegidasTest {
     void cadastroNormalizaCpfTelefoneEmailCidadeEFormacao() throws Exception {
         mvc.perform(post("/cadastro/profissional").contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nome":"Profissional","email":"PROF-NORMALIZA@TESTE.INVALID ","senha":"Senha@123",
+                        {"nome":"Profissional","codigoEmail":"12345678","email":"PROF-NORMALIZA@TESTE.INVALID ","senha":"Senha@123",
                          "cpf":"123.456.789-09","telefone":"(11) 3456-7890","estado":" São Paulo ",
                          "cidade":" Campinas ","formacao":" Psicologia "}
                         """))

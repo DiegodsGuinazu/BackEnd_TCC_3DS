@@ -9,6 +9,12 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(OutputCaptureExtension.class)
 class EmailRecuperacaoServiceTest {
+    @Test void confirmacaoUsaModeloDeCadastro() {
+        var gmail = mock(GmailRecuperacaoService.class); when(gmail.configurado()).thenReturn(true);
+        new EmailRecuperacaoService("", "", "gmail", gmail).enviarConfirmacao("pessoa@teste.invalid", "01234567");
+        verify(gmail).enviarConfirmacao("pessoa@teste.invalid", "01234567");
+        verify(gmail, never()).enviar(anyString(), anyString());
+    }
     @Test void selecionaGmailSemDependerDeCredenciaisResend() {
         var gmail = mock(GmailRecuperacaoService.class); when(gmail.configurado()).thenReturn(true);
         var service = new EmailRecuperacaoService("", "", "gmail", gmail);
