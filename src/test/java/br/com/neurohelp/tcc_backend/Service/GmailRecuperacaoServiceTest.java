@@ -2,6 +2,11 @@ package br.com.neurohelp.tcc_backend.Service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.http.client.MockClientHttpRequest;
@@ -15,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
+@ExtendWith(OutputCaptureExtension.class)
 class GmailRecuperacaoServiceTest {
     private MockRestServiceServer server;
     private GmailRecuperacaoService gmail;
@@ -102,6 +108,61 @@ class GmailRecuperacaoServiceTest {
     @Test void respostaSensivelTemToStringProtegido() {
         String texto = new GmailRecuperacaoService.TokenResponse("access-teste", 3600L, "Bearer").toString();
         assertFalse(texto.contains("access-teste"));
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"invalid_grant", "invalid_client"})
+    void identificaErroOAuthSemVazarCredenciais(String motivo, CapturedOutput output) {
+        server.expect(requestTo(GmailRecuperacaoService.TOKEN_URL))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"" + motivo + "\",\"error_description\":\"segredo-teste refresh-teste access-teste pessoa@teste.invalid 01234567\"}"));
+        var erro = assertThrows(IllegalStateException.class, () -> gmail.enviar("pessoa@teste.invalid", "01234567"));
+        assertNull(erro.getCause());
+        assertTrue(output.getAll().contains("etapa=autorizacao, http=400, motivo=" + motivo));
+        verificarPrivacidade(output);
+        server.verify();
+    }
+    @Test void identificaApiDesativadaSemRegistrarMensagemOuMetadados(CapturedOutput output) {
+        esperarToken("access-teste");
+        server.expect(requestTo(GmailRecuperacaoService.SEND_URL))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":{\"status\":\"PERMISSION_DENIED\",\"message\":\"pessoa@teste.invalid\","
+                                + "\"details\":[{\"reason\":\"SERVICE_DISABLED\",\"metadata\":{\"secret\":\"refresh-teste\"}}]}}"));
+        assertThrows(IllegalStateException.class, () -> gmail.enviar("pessoa@teste.invalid", "01234567"));
+        assertTrue(output.getAll().contains("etapa=envio, http=403, motivo=SERVICE_DISABLED"));
+        verificarPrivacidade(output);
+        server.verify();
+    }
+    @Test void identificaPermissaoInsuficiente(CapturedOutput output) {
+        esperarToken("access-teste");
+        server.expect(requestTo(GmailRecuperacaoService.SEND_URL))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":{\"errors\":[{\"reason\":\"insufficientPermissions\"}]}}"));
+        assertThrows(IllegalStateException.class, () -> gmail.enviar("pessoa@teste.invalid", "01234567"));
+        assertTrue(output.getAll().contains("etapa=envio, http=403, motivo=insufficientPermissions"));
+        verificarPrivacidade(output);
+        server.verify();
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"{\"error\":\"refresh-teste\"}", "segredo-teste", "{\"error\":null}", "{\"error\":{\"errors\":[null],\"status\":\"pessoa@teste.invalid\"}}"})
+    void omiteErrosDesconhecidosOuCorposInvalidos(String corpo, CapturedOutput output) {
+        server.expect(requestTo(GmailRecuperacaoService.TOKEN_URL))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST).body(corpo).contentType(MediaType.APPLICATION_JSON));
+        assertThrows(IllegalStateException.class, () -> gmail.enviar("pessoa@teste.invalid", "01234567"));
+        assertTrue(output.getAll().contains("etapa=autorizacao, http=400, motivo=nao_identificado"));
+        verificarPrivacidade(output);
+        server.verify();
+    }
+    @Test void distingueFalhaDeConexaoSemImprimirCausa(CapturedOutput output) {
+        server.expect(requestTo(GmailRecuperacaoService.TOKEN_URL))
+                .andRespond(request -> { throw new java.io.IOException("segredo-teste refresh-teste"); });
+        assertThrows(IllegalStateException.class, () -> gmail.enviar("pessoa@teste.invalid", "01234567"));
+        assertTrue(output.getAll().contains("etapa=autorizacao, http=0, motivo=falha_conexao"));
+        verificarPrivacidade(output);
+        server.verify();
+    }
+    private static void verificarPrivacidade(CapturedOutput output) {
+        for (String privado : new String[]{"client-teste", "segredo-teste", "refresh-teste", "access-teste", "pessoa@teste.invalid", "01234567"})
+            assertFalse(output.getAll().contains(privado), "Log expôs dado privado");
     }
     static class MutableClock extends Clock {
         Instant agora = Instant.parse("2026-10-19T12:00:00Z");

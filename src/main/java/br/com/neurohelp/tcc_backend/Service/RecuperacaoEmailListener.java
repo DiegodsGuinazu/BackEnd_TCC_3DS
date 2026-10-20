@@ -21,7 +21,10 @@ public class RecuperacaoEmailListener {
     public void enviarAposCommit(Envio envio) {
         try {
             executor.execute(() -> {
-                try { emails.enviar(envio.email(), envio.codigo()); }
+                try {
+                    emails.enviar(envio.email(), envio.codigo());
+                    log.info("Solicitação de envio de recuperação aceita pelo provedor de e-mail.");
+                }
                 catch (Exception e) { log.warn("Falha no envio de recuperação. Verifique a configuração e o provedor de e-mail."); }
             });
         } catch (org.springframework.core.task.TaskRejectedException e) {
