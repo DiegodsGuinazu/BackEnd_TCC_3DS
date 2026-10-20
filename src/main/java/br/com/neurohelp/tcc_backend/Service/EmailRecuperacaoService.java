@@ -58,7 +58,7 @@ public class EmailRecuperacaoService {
                         "text", (confirmacao ? "Seu código para confirmar o e-mail e concluir o cadastro é: " : "Seu código para redefinir a senha é: ") + codigo
                                 + "\n\nEle vale por 15 minutos e pode ser usado uma única vez. "
                                 + (confirmacao ? "Informe-o na confirmação do cadastro no site ou aplicativo. " : "Informe-o na tela Recuperar senha do site ou aplicativo. ")
-                                + "Se não solicitou esta alteração, ignore este e-mail. Nunca compartilhe o código."))
+                                + (confirmacao ? "Se não iniciou este cadastro, ignore este e-mail. Nunca compartilhe o código." : "Se não solicitou esta alteração, ignore este e-mail. Nunca compartilhe o código.")))
                 .retrieve().toBodilessEntity();
     }
 }

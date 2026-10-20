@@ -120,6 +120,16 @@ class ConfirmacaoEmailTest {
         assertFalse(codigos.findAll().getFirst().isUtilizado());
         cadastrar("responsavel", email, codigo).andExpect(status().isOk());
     }
+    @Test void falhaAoSalvarContaDesfazConsumoDoCodigo() throws Exception {
+        String ocupado = "ocupado-" + email; usados.add(ocupado);
+        var anterior = new UserProf(); anterior.setNome("CPF ocupado"); anterior.setEmail(ocupado);
+        anterior.setCpf("52998224725"); anterior.setSenha(encoder.encode("Senha@123")); profissionais.saveAndFlush(anterior);
+        String codigo = solicitar();
+        cadastrar("profissional", email, codigo).andExpect(status().isConflict());
+        assertFalse(codigos.findAll().getFirst().isUtilizado());
+        assertFalse(profissionais.findByEmailIgnoreCase(email).isPresent());
+        cadastrar("responsavel", email, codigo).andExpect(status().isOk());
+    }
     @ParameterizedTest @ValueSource(strings = {"profissional", "responsavel", "admin"})
     void contasAnterioresContinuamEntrandoSemConfirmarERecebemRespostaGenerica(String perfil) throws Exception {
         String senha = encoder.encode("Senha@123");
