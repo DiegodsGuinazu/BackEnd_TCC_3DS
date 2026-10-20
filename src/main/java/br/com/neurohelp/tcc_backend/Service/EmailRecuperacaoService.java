@@ -41,14 +41,23 @@ public class EmailRecuperacaoService {
         };
     }
     public void enviar(String destinatario, String codigo) {
+        enviar(destinatario, codigo, false);
+    }
+    public void enviarConfirmacao(String destinatario, String codigo) {
+        enviar(destinatario, codigo, true);
+    }
+    private void enviar(String destinatario, String codigo, boolean confirmacao) {
         if (!configurado()) throw new IllegalStateException("Provedor de e-mail não configurado.");
-        if ("gmail".equals(provedor)) { gmail.enviar(destinatario, codigo); return; }
+        if ("gmail".equals(provedor)) {
+            if (confirmacao) gmail.enviarConfirmacao(destinatario, codigo); else gmail.enviar(destinatario, codigo);
+            return;
+        }
         client.post().uri("/emails").header("Authorization", "Bearer " + apiKey)
                 .body(Map.of("from", remetente, "to", List.of(destinatario),
-                        "subject", "EspectroCare — redefinição de senha",
-                        "text", "Seu código para redefinir a senha é: " + codigo
+                        "subject", confirmacao ? "EspectroCare — confirme seu e-mail" : "EspectroCare — redefinição de senha",
+                        "text", (confirmacao ? "Seu código para confirmar o e-mail e concluir o cadastro é: " : "Seu código para redefinir a senha é: ") + codigo
                                 + "\n\nEle vale por 15 minutos e pode ser usado uma única vez. "
-                                + "Informe-o na tela Recuperar senha do site ou aplicativo. "
+                                + (confirmacao ? "Informe-o na confirmação do cadastro no site ou aplicativo. " : "Informe-o na tela Recuperar senha do site ou aplicativo. ")
                                 + "Se não solicitou esta alteração, ignore este e-mail. Nunca compartilhe o código."))
                 .retrieve().toBodilessEntity();
     }

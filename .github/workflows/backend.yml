@@ -93,6 +93,22 @@ jobs:
             END IF;
           END $$;
           SQL
+      - name: Validar tabela de confirmação sem modificar contas anteriores
+        if: matrix.banco == 'postgres'
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-20-confirmacao-email.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 < docs/sql/2026-10-20-confirmacao-email.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U test -d espectrocare_test -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF to_regclass('public.confirmacao_email') IS NULL
+               OR NOT EXISTS (SELECT 1 FROM user_prof WHERE email = 'prof@teste.invalid')
+               OR NOT EXISTS (SELECT 1 FROM user_resp WHERE email = 'resp@teste.invalid') THEN
+              RAISE EXCEPTION 'A migração de confirmação não preservou os dados anteriores';
+            END IF;
+          END $$;
+          SQL
       - name: Preservar relatórios
         if: always()
         uses: actions/upload-artifact@v4

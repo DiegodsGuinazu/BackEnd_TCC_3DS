@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+@org.springframework.scheduling.annotation.EnableScheduling
 @Configuration
 public class RecuperacaoEmailConfig {
     @Bean

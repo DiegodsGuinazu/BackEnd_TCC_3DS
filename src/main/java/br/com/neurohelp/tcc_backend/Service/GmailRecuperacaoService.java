@@ -71,6 +71,12 @@ public class GmailRecuperacaoService {
                 && remetente.length() <= 254 && ENDERECO.matcher(remetente).matches();
     }
     public void enviar(String destinatario, String codigo) {
+        enviar(destinatario, codigo, false);
+    }
+    public void enviarConfirmacao(String destinatario, String codigo) {
+        enviar(destinatario, codigo, true);
+    }
+    private void enviar(String destinatario, String codigo, boolean confirmacao) {
         if (!configurado()) throw new IllegalStateException("Envio Gmail não configurado.");
         if (destinatario == null || destinatario.length() > 254 || !ENDERECO.matcher(destinatario).matches()
                 || codigo == null || !codigo.matches("[0-9]{8}"))
@@ -80,12 +86,13 @@ public class GmailRecuperacaoService {
             String token = obterAccessToken();
             etapa = "envio";
             client.post().uri(SEND_URL).headers(h -> h.setBearerAuth(token))
-                    .contentType(MediaType.APPLICATION_JSON).body(Map.of("raw", mensagem(destinatario, codigo)))
+                    .contentType(MediaType.APPLICATION_JSON).body(Map.of("raw", mensagem(destinatario, codigo, confirmacao)))
                     .retrieve().toBodilessEntity();
         } catch (Exception e) {
             if (e instanceof RestClientResponseException http && http.getStatusCode().value() == 401) invalidarToken();
             int status = e instanceof RestClientResponseException http ? http.getStatusCode().value() : 0;
-            log.warn("Falha Gmail na recuperação: etapa={}, http={}, motivo={}.", etapa, status, motivoSeguro(e));
+            log.warn("Falha Gmail no envio: finalidade={}, etapa={}, http={}, motivo={}.",
+                    confirmacao ? "confirmacao_cadastro" : "recuperacao_senha", etapa, status, motivoSeguro(e));
             // Exceções HTTP podem conter corpo, tokens ou mensagens do provedor. Não propagar a causa.
             throw new IllegalStateException("Falha no envio Gmail. Verifique a autorização e os limites da conta.");
         }
@@ -131,11 +138,12 @@ public class GmailRecuperacaoService {
         return accessToken;
     }
     private synchronized void invalidarToken() { accessToken = null; renovarEm = Instant.EPOCH; }
-    private String mensagem(String destinatario, String codigo) {
-        String assunto = Base64.getEncoder().encodeToString("EspectroCare — redefinição de senha".getBytes(StandardCharsets.UTF_8));
-        String texto = "Seu código para redefinir a senha é: " + codigo
+    private String mensagem(String destinatario, String codigo, boolean confirmacao) {
+        String titulo = confirmacao ? "EspectroCare — confirme seu e-mail" : "EspectroCare — redefinição de senha";
+        String assunto = Base64.getEncoder().encodeToString(titulo.getBytes(StandardCharsets.UTF_8));
+        String texto = (confirmacao ? "Seu código para confirmar o e-mail e concluir o cadastro é: " : "Seu código para redefinir a senha é: ") + codigo
                 + "\n\nEle vale por 15 minutos e pode ser usado uma única vez. "
-                + "Informe-o na tela Recuperar senha do site ou aplicativo. "
+                + (confirmacao ? "Informe-o na confirmação do cadastro no site ou aplicativo. " : "Informe-o na tela Recuperar senha do site ou aplicativo. ")
                 + "Se não solicitou esta alteração, ignore este e-mail. Nunca compartilhe o código.";
         String corpo = Base64.getMimeEncoder(76, "\r\n".getBytes(StandardCharsets.US_ASCII))
                 .encodeToString(texto.getBytes(StandardCharsets.UTF_8));

@@ -13,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
+import br.com.neurohelp.tcc_backend.Service.ConfirmacaoEmailService;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import br.com.neurohelp.tcc_backend.Service.CpfValidator;
 import java.util.regex.Pattern;
 
@@ -26,18 +29,21 @@ public class CadastroController {
     private final responsavelRepository responsavelRepository;
     private final PasswordEncoder passwordEncoder;
     private final AdminRepository admins;
+    private final ConfirmacaoEmailService confirmacao;
 
     public CadastroController(
             profissionalRepository profissionalRepository,
             responsavelRepository responsavelRepository,
-            PasswordEncoder passwordEncoder, AdminRepository admins) {
+            PasswordEncoder passwordEncoder, AdminRepository admins, ConfirmacaoEmailService confirmacao) {
         this.admins = admins;
+        this.confirmacao = confirmacao;
 
         this.profissionalRepository = profissionalRepository;
         this.responsavelRepository = responsavelRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     @PostMapping("/profissional")
     public ResponseEntity<?> cadastrarProfissional(@Valid @RequestBody CadastroProfissionalDTO dto) {
         if (dto.cpf() != null && !dto.cpf().isBlank() && !CpfValidator.valido(dto.cpf())) {
@@ -54,6 +60,7 @@ public class CadastroController {
             return ResponseEntity.status(409).body("Não foi possível concluir o cadastro com os dados informados.");
         }
 
+        confirmacao.consumir(email, dto.codigoEmail());
         UserProf usuario = new UserProf();
         usuario.setNome(normalizarTexto(dto.nome()));
         usuario.setEmail(email);
@@ -70,6 +77,7 @@ public class CadastroController {
         return ResponseEntity.ok("Profissional cadastrado com sucesso");
     }
 
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     @PostMapping("/responsavel")
     public ResponseEntity<?> cadastrarResponsavel(@Valid @RequestBody CadastroResponsavelDTO dto) {
         if (dto.cpf() != null && !dto.cpf().isBlank() && !CpfValidator.valido(dto.cpf())) {
@@ -86,6 +94,7 @@ public class CadastroController {
             return ResponseEntity.status(409).body("Não foi possível concluir o cadastro com os dados informados.");
         }
 
+        confirmacao.consumir(email, dto.codigoEmail());
         UserResp usuario = new UserResp();
         usuario.setNome(normalizarTexto(dto.nome()));
         usuario.setEmail(email);

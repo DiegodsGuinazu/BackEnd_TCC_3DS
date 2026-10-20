@@ -64,6 +64,20 @@ class GmailRecuperacaoServiceTest {
         gmail.enviar("pessoa@teste.invalid", "01234567");
         server.verify();
     }
+    @Test void confirmacaoDeCadastroTemAssuntoEInstrucoesProprios() {
+        esperarToken("access-teste");
+        server.expect(requestTo(GmailRecuperacaoService.SEND_URL)).andExpect(request -> {
+            String raw = new JsonMapper().readTree(((MockClientHttpRequest) request).getBodyAsString()).get("raw").asString();
+            String mime = new String(Base64.getUrlDecoder().decode(raw), StandardCharsets.UTF_8);
+            String assunto = mime.split("Subject: =\\?UTF-8\\?B\\?", 2)[1].split("\\?=", 2)[0];
+            assertEquals("EspectroCare — confirme seu e-mail", new String(Base64.getDecoder().decode(assunto), StandardCharsets.UTF_8));
+            String corpo = new String(Base64.getMimeDecoder().decode(mime.split("\\r\\n\\r\\n", 2)[1]), StandardCharsets.UTF_8);
+            assertTrue(corpo.contains("concluir o cadastro")); assertTrue(corpo.contains("01234567"));
+            assertFalse(corpo.contains("redefinir a senha"));
+        }).andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+        gmail.enviarConfirmacao("pessoa@teste.invalid", "01234567");
+        server.verify();
+    }
     @Test void renovaAntesDaExpiracao() {
         esperarToken("access-1"); esperarEnvio("access-1");
         esperarToken("access-2"); esperarEnvio("access-2");

@@ -24,6 +24,7 @@ public record CadastroResponsavelDTO(
         )
         String telefone,
         @Size(max = 80) String estado,
-        @Size(max = 120) String cidade
+        @Size(max = 120) String cidade,
+        @Size(max = 8) String codigoEmail
 ) {
 }
