@@ -9,7 +9,8 @@ Solicite uma vez o código para uma conta cadastrada com e-mail real. Aguarde pe
 menos 60 segundos entre solicitações. O limite é de três solicitações por e-mail
 em 15 minutos; se atingido, aguarde esse período.
 
-Em caso de falha Gmail, procure `Falha Gmail na recuperação`:
+Em caso de falha Gmail, procure `Falha Gmail no envio`. O campo `finalidade` distingue
+`recuperacao_senha` de `confirmacao_cadastro`:
 
 | Campo ou motivo | Interpretação e próximo passo |
 | --- | --- |
@@ -22,7 +23,7 @@ Em caso de falha Gmail, procure `Falha Gmail na recuperação`:
 | `falha_conexao`, `http=0` | Não houve resposta HTTP utilizável; confira conectividade e disponibilidade do provedor. |
 | `nao_identificado` | O motivo não está na lista de códigos públicos reconhecidos; informe apenas etapa e status HTTP para investigação. |
 
-`Solicitação de envio de recuperação aceita pelo provedor de e-mail.` registra
+`Solicitação de envio de e-mail aceita pelo provedor.` registra
 o retorno bem-sucedido da chamada. Não garante entrega na caixa de entrada;
 confira também Enviados no remetente e spam no destinatário.
 
@@ -30,8 +31,9 @@ Os registros omitem credenciais, tokens, código de recuperação, destinatário
 corpo da resposta, mensagens livres do provedor e pilhas de exceção.
 Compartilhe apenas as linhas de diagnóstico; não compartilhe variáveis secretas.
 
-Esta atualização não modifica rotas, formato das requisições, banco de dados,
-site ou aplicativo. Não exige nova execução de SQL nem troca de provedor.
+Os registros de diagnóstico não exigem troca de provedor nem de credenciais.
+A confirmação para novos cadastros tem requisitos próprios de banco e clientes;
+consulte [CONFIRMACAO_EMAIL_CADASTRO.md](CONFIRMACAO_EMAIL_CADASTRO.md).
 
 Referências oficiais:
 - https://developers.google.com/workspace/gmail/api/guides/handle-errors
