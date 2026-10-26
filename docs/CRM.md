@@ -1,69 +1,51 @@
-# Consulta oficial de CRM
+# CRM — conferência manual gratuita
 
-## Integração
+Substitui o WS pago do PR #11. Não exige SEI, chave ou `CFM_CHAVE`. Não acessa endpoints privados, não automatiza CAPTCHA e não faz scraping. A equipe consulta gratuitamente o [portal público do CFM](https://portal.cfm.org.br/busca-medicos/) por nome, número e UF.
 
-`POST /validacoes/crm` recebe `{"numero":"1234567","uf":"SP","nome":"Nome completo"}`.
+## Fluxo
 
-O serviço chama a operação `Consultar` do WS oficial do CFM, via SOAP 1.1/HTTPS, sem dependências novas. Verifica número, UF, situação regular e correspondência do nome informado, normalizando acentos, caixa e espaços. Não devolve nome, chave ou dados do cadastro consultado. Não comprova a identidade de quem preenche o formulário, nem cria selo público de verificação.
+1. Cadastro e edição validam somente o formato local de registros explicitamente CRM: UF válida, 1 a 7 dígitos diferentes de zero, sufixo `-P` opcional. Não consultam serviço externo. A confirmação de e-mail, CPF, senha e autenticação continuam com as regras existentes.
+2. O profissional vê o aviso de CRM não verificado ao lado do nome na Minha Área. Abaixo do número fica **Validar CRM**, com explicação de que solicita conferência pela equipe.
+3. `POST /api/perfil/crm/solicitacao`, sem corpo, usa exclusivamente o profissional autenticado e os dados salvos no banco. Passa a `EM_ANALISE`. Repetir um pedido em análise ou já conferido não cria outra solicitação. Limite: 5 chamadas em 15 minutos por conta e instância.
+4. No painel administrativo, a equipe abre a consulta oficial e compara nome completo, número, UF e situação ativa. Marca a caixa de conferência e confirma, ou registra **Não confirmado** quando há divergência. Indisponibilidade do portal deve manter o pedido em análise.
+5. O servidor registra estado, data e ID do último revisor. O selo **CRM conferido** informa que houve conferência manual na data apresentada. Não comprova identidade do usuário nem título de especialista, e não garante situação profissional em tempo real.
+6. Alterar nome ou número/UF/sufixo invalida a conferência e o pedido anterior, inclusive se o usuário voltar ao valor antigo. Editar bio, telefone ou endereço preserva a conferência. Nome e registro consultados são comparados em toda resposta como proteção adicional.
 
-Referências oficiais consultadas em 26/10/2026:
+O status aparece entre formação e localização no card público, e acima de Registro no detalhe (que continua exigindo login). A área de edição também mostra o status e permite solicitar. CRP, CRN, CREFITO, outros conselhos e números sem conselho identificado aparecem como **Registro não verificado**, sem selo CRM ou botão de consulta médica. Psicólogos usam CRP; não é correto inferir um CRM a partir da formação.
 
-- [Manual WS CFM, revisão de agosto de 2026](https://sis.cfm.org.br/listamedicos/arquivos/manualwebservices.pdf), seções 3.3, 4.1 e 4.2: número natural de até **7 dígitos** na consulta, UF e chave; retorno com prefixos/sufixos; código 8101 para não encontrado.
-- [Credenciamento e chave do serviço](https://sis.cfm.org.br/listamedicos/informacoes).
-- [Consulta pública manual](https://portal.cfm.org.br/busca-medicos/).
+## Contratos
 
-Não se usa algoritmo inventado de dígito verificador ou scraping do portal público.
+Campos existentes dos DTOs e `numRegistro` são preservados. `PerfilResponseDTO` e `ProfissionalResponseDTO` ganham o objeto adicional:
 
-## Configuração e aplicação
+```json
+{"crmVerificacao":{"status":"PENDENTE","conferidoEm":null,"fonte":"https://portal.cfm.org.br/busca-medicos/"}}
+```
 
-1. Obter credenciamento e chave junto ao CFM. Não contratar serviços ou pagar taxas automaticamente.
-2. Configurar `CFM_CHAVE` nas variáveis de ambiente do backend (Render). Nunca colocar a chave no frontend, aplicativo, repositório ou logs.
-3. Executar com Java 21: `./gradlew test` e `./gradlew bootJar`.
-4. Publicar em homologação e testar conexão ao host oficial `ws.cfm.org.br:8080` por HTTPS/TLS 1.2. O cliente mantém validação normal do certificado e limites de conexão/resposta.
-5. Fazer uma consulta com dados autorizados e testar também número não localizado, nome divergente e indisponibilidade. Só então disponibilizar o fluxo de CRM do frontend.
+Estados: `PENDENTE`, `EM_ANALISE`, `VERIFICADO`, `NAO_CONFIRMADO`, `NAO_APLICAVEL`. A data pública só aparece quando o estado é VERIFICADO e há revisor registrado. Pendência/negativa não significam falsificação e não bloqueiam a conta.
 
-O servidor inicia sem chave; a consulta retorna 503 com mensagem clara. **Novos cadastros com registro explicitamente iniciado por CRM, ou alterações de nome/CRM nesses perfis, ficam bloqueados enquanto o CFM não puder confirmar o registro.** Alterar apenas bio/telefone de um perfil existente não obriga nova consulta.
-
-## Respostas
-
-| HTTP | Resultado |
+| Rota | Acesso e comportamento |
 |---|---|
-| 200 | `valido: true`, `cadastroConsultado: true`, `status: REGULAR` quando CRM/UF/nome/situação correspondem |
-| 200 | `valido: false`, consulta realizada e `NAO_ENCONTRADO`, `NAO_REGULAR` ou `NOME_DIVERGENTE` |
-| 400 | Entrada inválida: nome, UF ou número de 1 a 7 dígitos diferente de zero |
-| 429 | Limite por instância excedido: 20 tentativas em 15 minutos |
-| 503 | Chave ausente/inválida, timeout, erro do CFM ou resposta inesperada; não significa CRM falso |
+| POST `/validacoes/crm` | Compatibilidade com clientes antigos. Retorna 200 com `valido:null`, `cadastroConsultado:false`, `status:VALIDACAO_MANUAL`. Formato não confirma existência. Entrada inválida: 400; limite existente de 20 chamadas/15 min por IP/instância. |
+| POST `/api/perfil/crm/solicitacao` | Só profissional autenticado, sem ID recebido do cliente. Retorna estado da conferência. 400 para conselho/formato incompatível; 429 para excesso. |
+| GET `/api/admin/crm/solicitacoes?pagina=0` | Só ADMIN; Page com 25 pedidos por página. Campos: id, nome, numRegistro, solicitadoEm, revisao. |
+| PUT `/api/admin/crm/solicitacoes/{id}` | Só ADMIN. Corpo: `{"revisao":1,"confirmado":true}`. Usa dados persistidos, bloqueio pessimista e revisão do pedido. 409 se pedido mudou/já foi analisado. |
 
-Todas as respostas do endpoint de consulta usam `Cache-Control: no-store`. Não há logs de credenciais/dados. O XML é interpretado com DTD e entidades externas desabilitados. O cliente usa timeout, resposta limitada a 256 KiB e endpoint fixo; não aceita URLs do cliente.
+A revisão e a edição de perfil recarregam a entidade sob bloqueio para não usar o estado antigo carregado pelo filtro JWT. Campos internos não são aceitos pelos DTOs de cadastro/edição e não são expostos publicamente. Nenhuma aprovação depende de localStorage ou de um clique no link externo. O link do portal é fixo, sem parâmetros supostos ou envio automático de dados.
 
-## Compatibilidade
+## Aplicação no PostgreSQL e Render
 
-DTOs, tabelas e respostas de artigos/profissionais não mudaram. Não há migração nem nova dependência. Cadastro continua recebendo `numRegistro`; o frontend salva CRM como `CRM-SP 1234567`, opcionalmente `-P` para provisório.
+1. Faça backup do banco. Execute `docs/sql/2026-10-26-crm-conferencia-manual.sql` no SQL Editor do Neon **antes de publicar o backend**, principalmente se `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` estiver no Render. O SQL é idempotente: adiciona sete colunas e um índice, sem alterar contas ou aprovar registros existentes. Não precisa mudar ddl-auto para contornar validação de esquema.
+2. Execute com Java 21: `./gradlew test` (Windows: `.\gradlew.bat test`), `./gradlew bootJar` e `docker build -t tcc-backend .`.
+3. Publique o backend e depois o frontend. Não há nova variável obrigatória. `CFM_CHAVE` pode ser removida se existir, pois não é usada mais.
+4. Use uma conta ADMIN existente no fluxo seguro de convites; não crie credenciais públicas. Confira o ciclo completo em homologação com um registro cuja consulta seja autorizada.
+5. O Android mantém as rotas/campos atuais e aceita cadastro sem WS. Não há alteração de telas do aplicativo neste pacote. Os DTOs Android precisam ignorar campos extras, como já é habitual com Gson; confirmar no build do app antes de publicar. O status visual novo pertence ao site.
 
-O backend também consulta antes de salvar registros explicitamente identificados como CRM. Erro de consulta não salva o perfil parcialmente nem consome o código de confirmação de e-mail. Uma recusa do CFM no cadastro/edição retorna 422. O código de confirmação por e-mail continua com o contrato anterior.
+Para desfazer, reverta os PRs e mantenha as colunas adicionadas, sem apagar as conferências. Atenção: reverter apenas o backend restaura o bloqueio da versão anterior quando não houver chave; preferir correção incremental. Nenhuma ação foi feita no banco ou Render nesta entrega.
 
-Números legados sem conselho identificado e registros CRP/CRN/CREFITO etc. mantêm o comportamento atual. Como não há campo de conselho/especialidade, não é possível atribuir automaticamente todo número a um CRM ou impedir que um cliente envie um número sem conselho. Não apresentar todos os perfis como verificados. Recomenda-se uma evolução coordenada com o aplicativo para conselho/UF/especialidade estruturados.
+## Testes e limites
 
-Não há alterações no aplicativo neste PR: seus DTOs continuam válidos. Clientes que enviarem `numRegistro` começando por CRM passam pela confirmação oficial; precisam tratar 400/422/503 como os demais erros da API. O seletor e a consulta pontual novos pertencem ao frontend web desta solicitação.
+Adicionados/atualizados testes Java para formato, estados, cadastro sem serviço pago, proteção contra autovalidação, proprietário, revisão antiga, idempotência e invalidação permanente por alteração de nome. Usam o H2 e configuração existentes. Não foram executados: somente Java 17 está instalado e o wrapper não consegue baixar Gradle 9.5.1 (`Network is unreachable`). `bootJar`, PostgreSQL, Docker e consulta manual real pendentes.
 
-## Testes e limites da validação
+Frontend: 12 testes Node passaram (7 novos de CRM + 5 existentes de CPF/recuperação), e a sintaxe de todos os JS foi verificada. A suíte Playwright foi atualizada para retirar a consulta paga e há um novo cenário CRM, mas os testes de navegador e a revisão visual nas larguras 1440/1024/768/480/390/360 não executaram: não há binário local e o navegador remoto recusou conexão ao servidor local. Não reutilizar os resultados visuais da entrega anterior como validação deste fluxo.
 
-Adicionados `CrmServiceTest` e `CrmIntegracaoTest`: formato de sete dígitos/UF, falta de chave, envelopes regulares/provisórios/EMFE, nome divergente, situação irregular, não encontrado, erros de chave/serviço, XML incompleto, bloqueio de XXE, outros conselhos, perfil sem gravação parcial e limite de consultas.
-
-`./gradlew test` foi tentado, mas não executou: distribuição Gradle 9.5.1 indisponível pela rede do ambiente e somente Java 17 instalado. `bootJar`, PostgreSQL e Docker também não foram executados. O CFM real não foi consultado por falta de chave; não há afirmação de validação em produção. Os testes do navegador do frontend passaram com respostas de CRM simuladas.
-
-Para desfazer, reverter o commit deste PR e retirar `CFM_CHAVE` do ambiente se não for mais usada. Não existe mudança de esquema a desfazer.
-
-## Arquivos modificados/adicionados
-
-- `src/main/java/br/com/neurohelp/tcc_backend/Service/CrmService.java`
-- `src/main/java/br/com/neurohelp/tcc_backend/Controller/Settings/CrmController.java`
-- `src/main/java/br/com/neurohelp/tcc_backend/Controller/Settings/CadastroController.java`
-- `src/main/java/br/com/neurohelp/tcc_backend/Controller/Settings/CadastroExceptionHandler.java`
-- `src/main/java/br/com/neurohelp/tcc_backend/Controller/Perfil/PerfilController.java`
-- `src/main/java/br/com/neurohelp/tcc_backend/Controller/IntegracaoExceptionHandler.java`
-- `src/main/java/br/com/neurohelp/tcc_backend/config/SecurityConfig.java`
-- `src/main/resources/application.properties`
-- `src/test/java/br/com/neurohelp/tcc_backend/Service/CrmServiceTest.java`
-- `src/test/java/br/com/neurohelp/tcc_backend/Controller/CrmIntegracaoTest.java`
-- `docs/CRM.md`
+Melhorias futuras: monitorar tempo de análise, registrar histórico completo das decisões (atualmente mantém só a última), prever reconferência periódica e estruturar conselho/UF de forma coordenada com o aplicativo. Não se adiciona prazo de validade de selo sem regra definida pelo projeto.

@@ -12,7 +12,8 @@ public record PerfilResponseDTO(
         String estado,
         String cidade,
         String formacao,
-        String numRegistro
+        String numRegistro,
+        br.com.neurohelp.tcc_backend.Service.CrmService.Verificacao crmVerificacao
 ) {
     public PerfilResponseDTO(UserProf userProf) {
         this(
@@ -25,7 +26,8 @@ public record PerfilResponseDTO(
                 userProf.getEstado(),
                 userProf.getCidade(),
                 userProf.getFormacao(),
-                userProf.getNumRegistro()
+                userProf.getNumRegistro(),
+                br.com.neurohelp.tcc_backend.Service.CrmService.verificacao(userProf)
         );
     }
 }

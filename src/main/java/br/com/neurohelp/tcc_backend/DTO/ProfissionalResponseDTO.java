@@ -12,7 +12,8 @@ public record ProfissionalResponseDTO(
         String cidade,
         String formacao,
         String numRegistro,
-        String fotoPerfilUrl
+        String fotoPerfilUrl,
+        br.com.neurohelp.tcc_backend.Service.CrmService.Verificacao crmVerificacao
 ) {
     public ProfissionalResponseDTO(UserProf usuario) {
         this(
@@ -24,7 +25,8 @@ public record ProfissionalResponseDTO(
                 usuario.getCidade(),
                 usuario.getFormacao(),
                 usuario.getNumRegistro(),
-                usuario.getFotoPerfil() == null ? null : "/api/profissionais/" + usuario.getId() + "/foto"
+                usuario.getFotoPerfil() == null ? null : "/api/profissionais/" + usuario.getId() + "/foto",
+                br.com.neurohelp.tcc_backend.Service.CrmService.verificacao(usuario)
         );
     }
 }

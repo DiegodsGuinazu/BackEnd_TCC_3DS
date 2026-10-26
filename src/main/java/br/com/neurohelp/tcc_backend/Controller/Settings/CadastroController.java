@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import br.com.neurohelp.tcc_backend.Service.CpfValidator;
 import br.com.neurohelp.tcc_backend.Service.CrmService;
-import br.com.neurohelp.tcc_backend.Service.RecuperacaoLimites;
 import java.util.regex.Pattern;
 
 @RestController
@@ -34,14 +33,12 @@ public class CadastroController {
     private final AdminRepository admins;
     private final ConfirmacaoEmailService confirmacao;
     private final CrmService crm;
-    private final RecuperacaoLimites limites;
 
     public CadastroController(
             profissionalRepository profissionalRepository,
             responsavelRepository responsavelRepository,
-            PasswordEncoder passwordEncoder, AdminRepository admins, ConfirmacaoEmailService confirmacao, CrmService crm, RecuperacaoLimites limites) {
+            PasswordEncoder passwordEncoder, AdminRepository admins, ConfirmacaoEmailService confirmacao, CrmService crm) {
         this.crm = crm;
-        this.limites = limites;
         this.admins = admins;
         this.confirmacao = confirmacao;
 
@@ -67,8 +64,6 @@ public class CadastroController {
             return ResponseEntity.status(409).body("Não foi possível concluir o cadastro com os dados informados.");
         }
 
-        if (dto.numRegistro() != null && dto.numRegistro().stripLeading().toUpperCase(Locale.ROOT).startsWith("CRM"))
-            limites.verificar("crm:" + request.getRemoteAddr(), 20);
         crm.validarRegistroSeCrm(dto.numRegistro(), dto.nome());
         confirmacao.consumir(email, dto.codigoEmail());
         UserProf usuario = new UserProf();
