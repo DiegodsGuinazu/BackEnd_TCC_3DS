@@ -10,7 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 @RestControllerAdvice(assignableTypes = {ConviteAdminController.class, AprendizagemController.class,
-        FotoPerfilController.class,
+        FotoPerfilController.class, CrmVerificacaoController.class,
         br.com.neurohelp.tcc_backend.Controller.Settings.CrmController.class,
         br.com.neurohelp.tcc_backend.Controller.Perfil.PerfilController.class,
         br.com.neurohelp.tcc_backend.Controller.Settings.RecuperacaoSenhaController.class,

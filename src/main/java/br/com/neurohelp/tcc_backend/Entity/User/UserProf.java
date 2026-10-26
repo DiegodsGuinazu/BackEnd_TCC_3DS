@@ -49,6 +49,22 @@ public class UserProf implements UsuarioAutenticavel {
 
     private String numRegistro;
 
+    // Escrita exclusiva do fluxo autenticado de conferência; nunca aceitar estes campos no cadastro.
+    @JsonIgnore @Column(length = 24)
+    private String crmStatus;
+    @JsonIgnore
+    private String crmNomeConferido;
+    @JsonIgnore
+    private String crmRegistroConferido;
+    @JsonIgnore
+    private java.time.Instant crmSolicitadoEm;
+    @JsonIgnore
+    private java.time.Instant crmConferidoEm;
+    @JsonIgnore
+    private Long crmRevisorId;
+    @JsonIgnore @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long crmRevisao;
+
     @Override
     public String getEmail() {
         return email;
