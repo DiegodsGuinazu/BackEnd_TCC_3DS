@@ -5,6 +5,9 @@ import br.com.neurohelp.tcc_backend.DTO.PerfilResponseDTO;
 import br.com.neurohelp.tcc_backend.Entity.User.UserProf;
 import br.com.neurohelp.tcc_backend.Repository.profissionalRepository;
 import jakarta.validation.Valid;
+import br.com.neurohelp.tcc_backend.Service.CrmService;
+import br.com.neurohelp.tcc_backend.Service.RecuperacaoLimites;
+import java.util.Objects;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +18,12 @@ public class PerfilController {
 
     private final profissionalRepository profissionalRepository;
 
-    public PerfilController(profissionalRepository profissionalRepository) {
+    private final CrmService crm;
+    private final RecuperacaoLimites limites;
+
+    public PerfilController(profissionalRepository profissionalRepository, CrmService crm, RecuperacaoLimites limites) {
+        this.crm = crm;
+        this.limites = limites;
         this.profissionalRepository = profissionalRepository;
     }
 
@@ -28,6 +36,15 @@ public class PerfilController {
     public ResponseEntity<PerfilResponseDTO> atualizarPerfil(
             @AuthenticationPrincipal UserProf usuarioLogado,
             @Valid @RequestBody AtualizarPerfilDTO dto) {
+
+        String registro = dto.numRegistro() == null ? usuarioLogado.getNumRegistro() : normalizarTextoOpcional(dto.numRegistro());
+        String nome = dto.nome() == null ? usuarioLogado.getNome() : dto.nome().trim();
+        // Antes de alterar a entidade: falha na consulta não pode salvar parcialmente.
+        if (!Objects.equals(registro, usuarioLogado.getNumRegistro()) || !Objects.equals(nome, usuarioLogado.getNome())) {
+            if (registro != null && registro.stripLeading().toUpperCase(java.util.Locale.ROOT).startsWith("CRM"))
+                limites.verificar("crm:perfil:" + usuarioLogado.getId(), 20);
+            crm.validarRegistroSeCrm(registro, nome);
+        }
 
         if (dto.nome() != null) usuarioLogado.setNome(dto.nome().trim());
         if (dto.bio() != null) usuarioLogado.setBio(normalizarTextoOpcional(dto.bio()));

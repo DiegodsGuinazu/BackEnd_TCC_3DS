@@ -11,6 +11,8 @@ import java.util.Map;
 
 @RestControllerAdvice(assignableTypes = {ConviteAdminController.class, AprendizagemController.class,
         FotoPerfilController.class,
+        br.com.neurohelp.tcc_backend.Controller.Settings.CrmController.class,
+        br.com.neurohelp.tcc_backend.Controller.Perfil.PerfilController.class,
         br.com.neurohelp.tcc_backend.Controller.Settings.RecuperacaoSenhaController.class,
         br.com.neurohelp.tcc_backend.Controller.Settings.CpfController.class})
 public class IntegracaoExceptionHandler {
