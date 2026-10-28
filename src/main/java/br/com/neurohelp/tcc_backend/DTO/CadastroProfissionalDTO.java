@@ -26,9 +26,13 @@ public record CadastroProfissionalDTO(
         String telefone,
         @Size(max = 80) String estado,
         @Size(max = 120) String cidade,
-        @Size(max = 160) String formacao,
+        @com.fasterxml.jackson.annotation.JsonAlias("profissao") @Size(max = 160) String formacao,
         @Size(max = 2000) String bio,
         @Size(max = 80) String numRegistro,
+        @Pattern(regexp = "^$|[0-9]{8}", message = "CEP deve possuir 8 dígitos.") String cep,
+        @Size(max = 120) String bairro,
+        @Size(max = 160) String logradouro,
+        @Size(max = 20) String numero,
         @Size(max = 8) String codigoEmail
 ) {
 }
