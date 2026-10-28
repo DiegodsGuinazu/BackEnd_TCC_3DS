@@ -1,0 +1,264 @@
+diff --git a/app/src/androidTest/java/com/example/neurohelp/auth/CadastroValidationTest.kt b/app/src/androidTest/java/com/example/neurohelp/auth/CadastroValidationTest.kt
+new file mode 100644
+index 0000000..b44d819
+--- /dev/null
++++ b/app/src/androidTest/java/com/example/neurohelp/auth/CadastroValidationTest.kt
+@@ -0,0 +1,35 @@
++package com.example.neurohelp.auth
++
++import android.widget.EditText
++import android.widget.LinearLayout
++import androidx.test.platform.app.InstrumentationRegistry
++import com.example.neurohelp.R
++import com.example.neurohelp.configurarCamposNumericos
++import org.junit.Assert.*
++import org.junit.Test
++
++class CadastroValidationTest {
++    @Test fun telefoneLimitaDigitacaoColagemESubstituicao() {
++        val instrumentation = InstrumentationRegistry.getInstrumentation()
++        instrumentation.runOnMainSync {
++            val root = LinearLayout(instrumentation.targetContext)
++            val phone = EditText(instrumentation.targetContext).apply { id = R.id.etTelefone }
++            root.addView(phone)
++            root.configurarCamposNumericos()
++            phone.setText("(11) 99999-9999")
++            assertEquals("11999999999", phone.text.toString())
++            phone.append("9")
++            assertEquals(11, phone.length())
++            phone.text.replace(0, phone.length(), "119999999999999")
++            assertEquals("11999999999", phone.text.toString())
++        }
++    }
++
++    @Test fun erroDeValidacaoNaoMostraValoresOuDetalhesInternos() {
++        assertEquals("Telefone: Telefone deve possuir 10 ou 11 dígitos.", ApiService.validationMessage(400,
++            """{"campos":{"telefone":"Telefone deve possuir 10 ou 11 dígitos."}}"""))
++        assertNull(ApiService.validationMessage(400, """{"campos":{"senha":"segredo"}}"""))
++        assertNull(ApiService.validationMessage(500, "stack trace"))
++        assertTrue(ApiService.validationMessage(422, "")!!.contains("código"))
++    }
++}
+diff --git a/app/src/main/java/com/example/neurohelp/Cadastro/Cadastro_Profissional2.kt b/app/src/main/java/com/example/neurohelp/Cadastro/Cadastro_Profissional2.kt
+index b6fe9ed..e54ebd1 100644
+--- a/app/src/main/java/com/example/neurohelp/Cadastro/Cadastro_Profissional2.kt
++++ b/app/src/main/java/com/example/neurohelp/Cadastro/Cadastro_Profissional2.kt
+@@ -74,7 +74,7 @@ class Cadastro_Profissional2 : AppCompatActivity() {
+                 "estado" to intent.getStringExtra("estado").orEmpty(),
+                 "email" to input(R.id.etEmail), "senha" to password(),
+                 "numRegistro" to input(R.id.etRegistroProfissional),
+-                "profissao" to input(R.id.etProfissao)
++                "formacao" to input(R.id.etProfissao)
+             )
+             val completeFields = fields + ADDRESS_KEYS.associateWith { intent.getStringExtra(it).orEmpty() }
+             iniciarConfirmacaoCadastro(true, completeFields)
+diff --git a/app/src/main/java/com/example/neurohelp/CamposFormulario.kt b/app/src/main/java/com/example/neurohelp/CamposFormulario.kt
+index 8c688c3..ae9b149 100644
+--- a/app/src/main/java/com/example/neurohelp/CamposFormulario.kt
++++ b/app/src/main/java/com/example/neurohelp/CamposFormulario.kt
+@@ -54,6 +54,8 @@ fun View.configurarCamposNumericos() {
+             }
+             if (numeros == entrada.toString()) null else numeros
+         }
+-        campo.filters = arrayOf(normalizador, *campo.filters)
++        val limite = if (id == R.id.etCep || id == R.id.etProfCep) 8 else 11
++        campo.filters = arrayOf(normalizador, *campo.filters.filterNot { it is android.text.InputFilter.LengthFilter }.toTypedArray(),
++            android.text.InputFilter.LengthFilter(limite))
+     }
+ }
+diff --git a/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidade.kt b/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidade.kt
+index 87a446f..026d0b3 100644
+--- a/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidade.kt
++++ b/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidade.kt
+@@ -10,6 +10,8 @@ import android.widget.CheckBox
+ import android.widget.EditText
+ import android.widget.TextView
+ import androidx.fragment.app.Fragment
++import androidx.lifecycle.lifecycleScope
++import kotlinx.coroutines.launch
+ import com.example.neurohelp.configurarDataNascimento
+ import com.example.neurohelp.R
+ import com.example.neurohelp.configurarCabecalhoPadrao
+@@ -37,6 +39,8 @@ class FragmentPrivacidade : Fragment() {
+         configurarDataNascimento(view, R.id.etDepDataNasc)
+         view.findViewById<EditText>(R.id.etSenha).isSaveEnabled = false
+ 
++        carregarDados(view)
++
+         // ---------- Responsável ----------
+         val camposResponsavel = listOf<View>(
+             view.findViewById(R.id.etRespNome),
+@@ -98,6 +102,24 @@ class FragmentPrivacidade : Fragment() {
+         )
+     }
+ 
++    private fun carregarDados(raiz: View) {
++        viewLifecycleOwner.lifecycleScope.launch {
++            try {
++                val api = com.example.neurohelp.auth.ApiService(com.example.neurohelp.auth.SessionStore(requireContext()))
++                val dados = org.json.JSONObject(api.protectedRequest("/api/conta/privacidade"))
++                val campos = mapOf(R.id.etRespNome to "nome", R.id.etRespTelefone to "telefone",
++                    R.id.etRespCpf to "cpf", R.id.etRespCidade to "cidade", R.id.etRespUf to "estado", R.id.etEmail to "email")
++                campos.forEach { (id, chave) ->
++                    val campo = raiz.findViewById<EditText>(id)
++                    if (!campo.isEnabled) campo.setText(if (dados.isNull(chave)) "" else dados.optString(chave))
++                }
++            } catch (e: kotlinx.coroutines.CancellationException) { throw e
++            } catch (_: Exception) {
++                android.widget.Toast.makeText(requireContext(), "Não foi possível carregar seus dados. Volte e tente novamente.", android.widget.Toast.LENGTH_LONG).show()
++            }
++        }
++    }
++
+     /**
+      * Botão "Editar": libera os campos da seção e vira "Salvar".
+      * Ao tocar em "Salvar", trava os campos de novo.
+diff --git a/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidadeProfissional.kt b/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidadeProfissional.kt
+index 83a96b4..074c917 100644
+--- a/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidadeProfissional.kt
++++ b/app/src/main/java/com/example/neurohelp/Perfil/FragmentPrivacidadeProfissional.kt
+@@ -29,7 +29,7 @@ import org.json.JSONObject
+  * A versão do responsável é a [FragmentPrivacidade].
+  *
+  * Cada seção tem o seu botão: "Editar" libera os campos e vira "Salvar"; "Salvar" trava de novo.
+- * Os dados vêm de GET /api/auth/me (nome, e-mail e, se a API informar, telefone/CPF/endereço);
++ * Os dados vêm de GET /api/conta/privacidade (nome, e-mail e, se a API informar, telefone/CPF/endereço);
+  * o que a API ainda não devolve fica como dica (hint) em cinza.
+  *
+  * TODO: enviar as alterações para a API quando existir o endpoint de atualização de perfil
+@@ -117,7 +117,7 @@ class FragmentPrivacidadeProfissional : Fragment() {
+         viewLifecycleOwner.lifecycleScope.launch {
+             try {
+                 val api = ApiService(SessionStore(requireContext()))
+-                val conta = JSONObject(api.protectedRequest("/api/auth/me"))
++                val conta = JSONObject(api.protectedRequest("/api/conta/privacidade"))
+ 
+                 preencher(view, R.id.etProfNome, conta.optString("nome"))
+                 preencher(view, R.id.etProfTelefone, conta.optString("telefone").filter { it in '0'..'9' })
+@@ -130,7 +130,7 @@ class FragmentPrivacidadeProfissional : Fragment() {
+                 preencher(view, R.id.etProfLogradouro, conta.optString("logradouro"))
+                 preencher(view, R.id.etProfNumero, conta.optString("numero"))
+ 
+-                val formacao = listOf(conta.optString("profissao"), conta.optString("numRegistro"))
++                val formacao = listOf(conta.optString("formacao"), conta.optString("numRegistro"))
+                     .filter { it.isNotBlank() }
+                     .joinToString(" · ")
+                 preencher(view, R.id.etProfFormacao, formacao)
+@@ -140,7 +140,7 @@ class FragmentPrivacidadeProfissional : Fragment() {
+             } catch (e: CancellationException) {
+                 throw e
+             } catch (_: Exception) {
+-                // Sem conexão/sessão expirada: a tela continua mostrando as dicas em cinza
++                Toast.makeText(requireContext(), "Não foi possível carregar seus dados. Volte e tente novamente.", Toast.LENGTH_LONG).show()
+             }
+         }
+     }
+diff --git a/app/src/main/java/com/example/neurohelp/Perfil/FragmentSobre.kt b/app/src/main/java/com/example/neurohelp/Perfil/FragmentSobre.kt
+index 3ff4e0b..710e898 100644
+--- a/app/src/main/java/com/example/neurohelp/Perfil/FragmentSobre.kt
++++ b/app/src/main/java/com/example/neurohelp/Perfil/FragmentSobre.kt
+@@ -52,7 +52,7 @@ class FragmentSobre : Fragment() {
+         }
+ 
+         txtLgpd.setOnClickListener {
+-            abrirLink("https://www.neurohelp.com/lgpd")
++            abrirLink("https://www.gov.br/anpd/pt-br/acesso-a-informacao/perguntas-frequentes")
+         }
+     }
+ 
+diff --git a/app/src/main/java/com/example/neurohelp/auth/ApiService.kt b/app/src/main/java/com/example/neurohelp/auth/ApiService.kt
+index 8f2d095..26dab75 100644
+--- a/app/src/main/java/com/example/neurohelp/auth/ApiService.kt
++++ b/app/src/main/java/com/example/neurohelp/auth/ApiService.kt
+@@ -20,7 +20,7 @@ class ApiService(private val session: SessionStore, private val baseUrl: String
+     }
+     suspend fun register(profissional: Boolean, fields: Map<String, String>) {
+         val accepted = setOf("nome", "email", "senha", "cpf", "telefone", "estado", "codigoEmail") +
+-                ADDRESS_KEYS.toSet() + (if (profissional) setOf("numRegistro", "profissao") else emptySet())
++                ADDRESS_KEYS.toSet() + (if (profissional) setOf("numRegistro", "formacao") else emptySet())
+         require(fields.keys.all { it in accepted })
+         request(if (profissional) "/cadastro/profissional" else "/cadastro/responsavel", "POST", JSONObject(fields))
+     }
+@@ -100,13 +100,34 @@ class ApiService(private val session: SessionStore, private val baseUrl: String
+             val response = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+             if (status !in 200..299) {
+                 if (isProtected && status == 401) session.clear()
+-                throw ApiException(status, errorMessage(status, isProtected))
++                throw ApiException(status, validationMessage(status, response) ?: errorMessage(status, isProtected))
+             }
+             response
+         } finally { connection.disconnect() }
+     }
+     companion object {
+-        // Não exibir corpos de erro: podem conter dados pessoais ou detalhes internos.
++        // Somente mensagens de validação conhecidas; nunca exibir payloads, valores ou stack traces.
++        fun validationMessage(status: Int, response: String): String? {
++            if (status == 422) return "E-mail não confirmado. Confira o código de 8 dígitos ou solicite outro."
++            if (status != 400) return null
++            val known = setOf("CPF inválido. Confira o número informado.", "A senha deve ocupar no máximo 72 bytes.",
++                "Informe CRM-SP 1234567: UF e número de até 7 dígitos (sufixo -P se provisório).",
++                "Informe nome completo, UF e número de 1 a 7 dígitos, diferente de zero.")
++            if (response.trim() in known) return response.trim()
++            val fields = try { JSONObject(response).optJSONObject("campos") } catch (_: Exception) { null } ?: return null
++            val labels = mapOf("nome" to "Nome", "email" to "E-mail", "senha" to "Senha", "cpf" to "CPF",
++                "telefone" to "Telefone", "cep" to "CEP", "estado" to "Estado", "cidade" to "Cidade",
++                "bairro" to "Bairro", "logradouro" to "Logradouro", "numero" to "Número",
++                "formacao" to "Profissão", "numRegistro" to "Registro", "codigoEmail" to "Código de e-mail")
++            val allowed = setOf("Preencha este campo.", "O tamanho informado não é permitido.",
++                "Confira este campo.", "CPF deve possuir exatamente 11 dígitos.",
++                "Telefone deve possuir 10 ou 11 dígitos.", "CEP deve possuir 8 dígitos.",
++                "A senha deve ter ao menos 8 caracteres, com maiúscula, minúscula, número e caractere especial.")
++            return labels.mapNotNull { (key, label) ->
++                fields.optString(key).takeIf { it in allowed }?.let { "$label: $it" }
++            }.joinToString("\n").takeIf { it.isNotBlank() }
++        }
++
+         fun errorMessage(status: Int, isProtected: Boolean): String = when (status) {
+             401 -> if (isProtected) "Sua sessão expirou. Entre novamente." else "E-mail ou senha inválidos."
+             403 -> "Você não tem permissão para acessar este recurso."
+diff --git a/app/src/main/java/com/example/neurohelp/auth/AuthUi.kt b/app/src/main/java/com/example/neurohelp/auth/AuthUi.kt
+index 662625d..fb1de09 100644
+--- a/app/src/main/java/com/example/neurohelp/auth/AuthUi.kt
++++ b/app/src/main/java/com/example/neurohelp/auth/AuthUi.kt
+@@ -31,7 +31,9 @@ fun AppCompatActivity.validate(id: Int, condition: Boolean, message: String): Bo
+ fun AppCompatActivity.credentials(emailId: Int, passwordId: Int, confirmation: Int? = null): Boolean {
+     val email = validate(emailId, android.util.Patterns.EMAIL_ADDRESS.matcher(input(emailId)).matches(), "Informe um e-mail válido")
+     val senha = findViewById<EditText>(passwordId).text.toString()
+-    val pass = validate(passwordId, senha.isNotBlank(), "Informe a senha")
++    val pass = validate(passwordId, if (confirmation == null) senha.isNotBlank() else
++        Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d\\s]).{8,}$").matches(senha) && senha.toByteArray(Charsets.UTF_8).size <= 72,
++        if (confirmation == null) "Informe a senha" else "Use ao menos 8 caracteres com maiúscula, minúscula, número e símbolo (até 72 bytes)")
+     val confirm = confirmation?.let { validate(it, findViewById<EditText>(it).text.toString() == senha, "As senhas não coincidem") } ?: true
+     return email && pass && confirm
+ }
+diff --git a/docs/PRIVACIDADE_CADASTRO.md b/docs/PRIVACIDADE_CADASTRO.md
+new file mode 100644
+index 0000000..e2a26ab
+--- /dev/null
++++ b/docs/PRIVACIDADE_CADASTRO.md
+@@ -0,0 +1,25 @@
++# Cadastro e consulta de privacidade
++
++`GET /api/conta/privacidade`, com `Authorization: Bearer <token>`, retorna apenas a própria conta de profissional ou responsável. Não recebe ID de outra pessoa, não retorna senha, hash ou campos internos e usa `Cache-Control: no-store`. Sem autenticação retorna 401; administradores não usam essa rota.
++
++Resposta: nome, email, cpf, telefone, estado, cidade, cep, bairro, logradouro, numero, formacao e numRegistro. Campos ausentes são nulos. Os dados de nascimento, sexo e dependente não eram coletados/persistidos pelo cadastro e não são inventados. Esta entrega preenche dados; não implementa edição ou upload de documentos.
++
++O cadastro de ambos os perfis aceita opcionalmente cep (8 dígitos), bairro (120 caracteres), logradouro (160) e numero (20). A API continua aceitando o contrato do site, com `formacao`; `profissao` é um alias para compatibilidade com versões anteriores do app. O app atualizado envia `formacao`.
++
++Erros de Bean Validation retornam HTTP 400 com `mensagem` e `campos`, por exemplo:
++
++```json
++{"mensagem":"Confira os campos indicados.","campos":{"telefone":"Telefone deve possuir 10 ou 11 dígitos."}}
++```
++
++Não são retornados valores rejeitados. Clientes só mostram mensagens conhecidas, e códigos de confirmação inválidos recebem orientação específica (422). Erros de duplicidade continuam genéricos.
++
++## Publicação e validação
++
++1. Aplicar `docs/sql/2026-10-28-endereco-cadastro.sql` no PostgreSQL se o ambiente não usa ddl-auto=update; as colunas são opcionais. Não há preenchimento retroativo de endereços descartados pelas versões anteriores.
++2. Publicar a API antes do app atualizado; depois publicar o site e distribuir o app.
++3. Executar `bash gradlew test` com Java 21; `PrivacidadeCadastroTest` cobre cadastro com payload do app, persistência, privacidade, autenticação e erros sem valores sensíveis.
++4. No app executar `bash gradlew connectedDebugAndroidTest` em emulador/dispositivo. Testa filtro de telefone e mensagens de validação. Validar manualmente cadastro profissional/responsável, consulta do perfil e LGPD.
++5. No site executar `node --test tests/cadastro-validacao.test.cjs`.
++
++Nesta sessão os testes do site passaram. O Gradle local não baixou sua distribuição devido à restrição de rede; H2, PostgreSQL, Docker e o build Android não foram executados. Não houve publicação em produção.

@@ -1,0 +1,75 @@
+diff --git a/assets/js/confirmacao-email.js b/assets/js/confirmacao-email.js
+index 8a5f9e0..c683dc7 100644
+--- a/assets/js/confirmacao-email.js
++++ b/assets/js/confirmacao-email.js
+@@ -9,6 +9,27 @@
+         503: "O envio de e-mail está indisponível. Tente novamente mais tarde."
+     }[status] || "Não foi possível concluir a solicitação. Tente novamente mais tarde.");
+ 
++    async function erroCadastro(response) {
++        if (response.status !== 400) return mensagem(response.status);
++        const text = await response.text();
++        const known = new Set(["CPF inválido. Confira o número informado.", "A senha deve ocupar no máximo 72 bytes.",
++            "Informe CRM-SP 1234567: UF e número de até 7 dígitos (sufixo -P se provisório).",
++            "Informe nome completo, UF e número de 1 a 7 dígitos, diferente de zero."]);
++        if (known.has(text.trim())) return text.trim();
++        try {
++            const {campos} = JSON.parse(text);
++            const labels = {nome: "Nome", email: "E-mail", senha: "Senha", cpf: "CPF", telefone: "Telefone",
++                cep: "CEP", estado: "Estado", cidade: "Cidade", bairro: "Bairro", logradouro: "Logradouro",
++                numero: "Número", formacao: "Formação", numRegistro: "Registro", codigoEmail: "Código de e-mail"};
++            const allowed = new Set(["Preencha este campo.", "O tamanho informado não é permitido.", "Confira este campo.",
++                "CPF deve possuir exatamente 11 dígitos.", "Telefone deve possuir 10 ou 11 dígitos.", "CEP deve possuir 8 dígitos.",
++                "A senha deve ter ao menos 8 caracteres, com maiúscula, minúscula, número e caractere especial."]);
++            const errors = Object.entries(labels).filter(([key]) => allowed.has(campos?.[key]))
++                .map(([key, label]) => `${label}: ${campos[key]}`);
++            return errors.join(" ") || mensagem(response.status);
++        } catch (_) { return mensagem(response.status); }
++    }
++
+     async function post(path, body) {
+         const controller = new AbortController();
+         const timeout = window.setTimeout(() => controller.abort(), 75000);
+@@ -88,7 +109,7 @@
+             try {
+                 const response = await post(endpoint, { ...payload, codigoEmail: codigo.value });
+                 if (response.ok) { fechar(true); return; }
+-                mostrar(mensagem(response.status), true);
++                mostrar(await erroCadastro(response), true);
+                 if (response.status === 422) { codigo.value = ""; }
+             } catch (_) {
+                 mostrar("Não foi possível confirmar a resposta do servidor. Tente novamente; se a conta já tiver sido criada, faça login.", true);
+diff --git a/tests/cadastro-validacao.test.cjs b/tests/cadastro-validacao.test.cjs
+new file mode 100644
+index 0000000..8bc6fd7
+--- /dev/null
++++ b/tests/cadastro-validacao.test.cjs
+@@ -0,0 +1,28 @@
++const {test} = require('node:test');
++const assert = require('node:assert/strict');
++const vm = require('node:vm');
++const fs = require('node:fs');
++const path = require('node:path');
++const load = name => fs.readFileSync(path.join(__dirname, '../assets/js', name), 'utf8');
++const ctx = {window: {}};
++vm.runInNewContext(load('form-utils.js'), ctx);
++vm.runInNewContext(load('confirmacao-email.js').replace('Object.freeze({ cadastrar })', 'Object.freeze({ cadastrar, erroCadastro })'), ctx);
++const forms = ctx.window.EspectroCareForms;
++const errors = ctx.window.EspectroCareConfirmacaoEmail.erroCadastro;
++test('telefone digitado ou colado nunca excede 11 dígitos', () => {
++  let input;
++  const field = {value: '', addEventListener: (_, fn) => {input = fn;}};
++  forms.bindMaskedInput(field, forms.formatPhone, 11);
++  for(const value of ['11999999999999', '(11) 99999-9999', '11 99999-9999']) {
++    field.value = value; input();
++    assert.equal(field.value.replace(/\D/g, ''), '11999999999');
++  }
++});
++test('cadastro mostra erro de campo e preserva mensagens desconhecidas', async () => {
++  const response = text => ({status:400, text: async () => text});
++  const message = await errors(response(JSON.stringify({campos:{senha:'A senha deve ter ao menos 8 caracteres, com maiúscula, minúscula, número e caractere especial.'}})));
++  assert.match(message, /Senha:.*8 caracteres/);
++  assert.doesNotMatch(await errors(response(JSON.stringify({campos:{senha:'senha-secreta'}}))), /senha-secreta/);
++  assert.doesNotMatch(await errors(response('<html>stacktrace</html>')), /stacktrace/);
++  assert.match(await errors({status:422}), /Código inválido/);
++});
