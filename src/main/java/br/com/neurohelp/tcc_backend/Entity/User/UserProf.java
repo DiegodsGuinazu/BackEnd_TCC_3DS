@@ -45,6 +45,11 @@ public class UserProf implements UsuarioAutenticavel {
 
     private String cidade;
 
+    private String cep;
+    private String bairro;
+    private String logradouro;
+    private String numero;
+
     private String formacao;
 
     private String numRegistro;

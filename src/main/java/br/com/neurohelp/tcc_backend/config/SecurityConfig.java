@@ -79,7 +79,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/perfil-responsavel", "/api/perfil-responsavel/**")
                         .access((authentication, context) -> new AuthorizationDecision(
                                 authentication.get().getPrincipal() instanceof UserResp))
-                        .requestMatchers("/api/conta/foto", "/api/conta/recuperacao-senha", "/usuarios/**")
+                        .requestMatchers("/api/conta/foto", "/api/conta/privacidade", "/api/conta/recuperacao-senha", "/usuarios/**")
                         .access((authentication, context) -> new AuthorizationDecision(
                                 authentication.get().getPrincipal() instanceof UserResp
                                 || authentication.get().getPrincipal() instanceof UserProf))

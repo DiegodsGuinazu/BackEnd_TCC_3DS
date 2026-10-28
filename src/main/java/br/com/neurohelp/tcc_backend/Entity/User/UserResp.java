@@ -33,6 +33,11 @@ public class UserResp implements UsuarioAutenticavel {
 
     private String cidade;
 
+    private String cep;
+    private String bairro;
+    private String logradouro;
+    private String numero;
+
     @Column(unique = true)
     private String cpf;
 

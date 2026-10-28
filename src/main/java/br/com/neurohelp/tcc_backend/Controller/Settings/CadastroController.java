@@ -74,6 +74,10 @@ public class CadastroController {
         usuario.setTelefone(normalizarTelefone(dto.telefone()));
         usuario.setEstado(normalizarTextoOpcional(dto.estado()));
         usuario.setCidade(normalizarTextoOpcional(dto.cidade()));
+        usuario.setCep(normalizarTextoOpcional(dto.cep()));
+        usuario.setBairro(normalizarTextoOpcional(dto.bairro()));
+        usuario.setLogradouro(normalizarTextoOpcional(dto.logradouro()));
+        usuario.setNumero(normalizarTextoOpcional(dto.numero()));
         usuario.setFormacao(normalizarTextoOpcional(dto.formacao()));
         usuario.setBio(normalizarTextoOpcional(dto.bio()));
         usuario.setNumRegistro(normalizarTextoOpcional(dto.numRegistro()));
@@ -108,6 +112,10 @@ public class CadastroController {
         usuario.setTelefone(normalizarTelefone(dto.telefone()));
         usuario.setEstado(normalizarTextoOpcional(dto.estado()));
         usuario.setCidade(normalizarTextoOpcional(dto.cidade()));
+        usuario.setCep(normalizarTextoOpcional(dto.cep()));
+        usuario.setBairro(normalizarTextoOpcional(dto.bairro()));
+        usuario.setLogradouro(normalizarTextoOpcional(dto.logradouro()));
+        usuario.setNumero(normalizarTextoOpcional(dto.numero()));
 
         responsavelRepository.save(usuario);
         return ResponseEntity.ok("Responsável cadastrado com sucesso");
