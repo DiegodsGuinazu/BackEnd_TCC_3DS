@@ -56,7 +56,32 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.ignoringRequestMatchers(request -> {
+                    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                        return true;
+                    }
+                    String authorization = request.getHeader("Authorization");
+                    if (authorization != null && authorization.startsWith("Bearer ")) {
+                        return true;
+                    }
+                    if (!List.of("POST", "PUT", "DELETE").contains(request.getMethod())) {
+                        return false;
+                    }
+                    return List.of(
+                            "/api/profissionais",
+                            "/api/aprendizagem",
+                            "/auth/login",
+                            "/auth/esqueci-senha",
+                            "/auth/redefinir-senha",
+                            "/validacoes/cpf",
+                            "/validacoes/crm",
+                            "/cadastro/profissional",
+                            "/cadastro/responsavel",
+                            "/cadastro/email/solicitar",
+                            "/cadastro/admin",
+                            "/cadastro/admin/convite/validar"
+                    ).contains(request.getRequestURI());
+                }))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Libera todas as requisições OPTIONS do navegador (CORS Preflight)

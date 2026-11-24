@@ -96,6 +96,14 @@ class AreasProtegidasTest {
         return "Bearer " + tokens.gerarToken(usuario);
     }
 
+    @Test
+    void postSemTokenNemCsrfNaoEPermitido() throws Exception {
+        mvc.perform(post("/api/perfil")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"/api/auth/me", "/api/profissionais/1",
             "/api/aprendizagem/1", "/api/perfil", "/api/perfil-responsavel"})
